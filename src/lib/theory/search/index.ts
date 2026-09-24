@@ -15,3 +15,4 @@ export {
 	DEFAULT_IDS_MAX_LIMIT,
 	DEFAULT_WEIGHT
 } from './search';
+export * from './properties';
