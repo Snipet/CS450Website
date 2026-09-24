@@ -1,0 +1,418 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource-variable/source-serif-4';
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                        */
+/* ------------------------------------------------------------------ */
+
+:root {
+	--font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-serif: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, serif;
+	--font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+	--text-xs: 0.75rem;
+	--text-sm: 0.875rem;
+	--text-base: 1rem;
+	--text-lg: 1.125rem;
+	--text-xl: 1.375rem;
+	--text-2xl: 1.75rem;
+	--text-3xl: 2.25rem;
+
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2rem;
+	--space-7: 3rem;
+	--space-8: 4rem;
+
+	--radius-sm: 4px;
+	--radius: 8px;
+	--radius-lg: 12px;
+
+	--content-width: 72ch;
+	--page-width: 1360px;
+	--gutter: clamp(16px, 4vw, 40px);
+
+	--ease: cubic-bezier(0.2, 0, 0, 1);
+	--duration: 160ms;
+
+	/* Light palette */
+	--bg: #fbfaf8;
+	--surface: #ffffff;
+	--surface-2: #f4f2ee;
+	--surface-3: #ebe8e2;
+	--border: #e3dfd8;
+	--border-strong: #cbc6bd;
+	--text: #1c1d21;
+	--text-2: #484b53;
+	--text-3: #767983;
+	--accent: #2d58b4;
+	--accent-hover: #234894;
+	--accent-soft: #e9effb;
+	--accent-contrast: #ffffff;
+	--focus: #2d58b4;
+	--shadow-sm: 0 1px 2px rgb(20 20 30 / 0.06);
+	--shadow: 0 1px 3px rgb(20 20 30 / 0.08), 0 4px 12px rgb(20 20 30 / 0.05);
+
+	/* Semantic colors used by the visualizations (see docs/ARCHITECTURE.md §3.6) */
+	--active: #c98a00; /* node being expanded, current step */
+	--active-soft: #fdf1d2;
+	--accept: #1e8449; /* goal test passed, solution path */
+	--accept-soft: #e2f3e8;
+	--reject: #bf3a26; /* pruned, cut off, not added */
+	--reject-soft: #fbe7e3;
+	--info: #1f7a8c; /* on the frontier */
+	--info-soft: #e1f2f5;
+	--explored: #4a67b0; /* expanded / explored set */
+	--explored-soft: #e6ecf8;
+	--heuristic: #7a5cc2; /* h(n) values, heuristic estimates */
+	--heuristic-soft: #efe9fa;
+	--node-fill: #ffffff;
+	--node-stroke: #3a3d45;
+	--edge: #5b5f69;
+	--dead: #9aa0a6;
+	--wall: #4a4d56;
+
+	/* Categorical palette (index mod 6): series, iterations, agents */
+	--tok-0: #2f64c4;
+	--tok-0-soft: #e7eefb;
+	--tok-1: #15805a;
+	--tok-1-soft: #dff2ea;
+	--tok-2: #b9540f;
+	--tok-2-soft: #fcebdd;
+	--tok-3: #8248bd;
+	--tok-3-soft: #f1e9fa;
+	--tok-4: #b92d69;
+	--tok-4-soft: #fbe5ee;
+	--tok-5: #6f6414;
+	--tok-5-soft: #f2eed7;
+
+	/* Overlays */
+	--backdrop: rgb(20 20 30 / 0.28);
+	--shadow-lg: 0 2px 6px rgb(20 20 30 / 0.08), 0 12px 32px rgb(20 20 30 / 0.14);
+
+	color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--bg: #141519;
+		--surface: #1b1d22;
+		--surface-2: #23252b;
+		--surface-3: #2c2f36;
+		--border: #2e3139;
+		--border-strong: #41454f;
+		--text: #e9e7e2;
+		--text-2: #b8b6b0;
+		--text-3: #8a8983;
+		--accent: #86a8ef;
+		--accent-hover: #a5bff4;
+		--accent-soft: #1e2a45;
+		--accent-contrast: #101218;
+		--focus: #86a8ef;
+		--shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+		--shadow: 0 1px 3px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.3);
+		--active: #f2c14e;
+		--active-soft: #3a3014;
+		--accept: #5cc98c;
+		--accept-soft: #16301f;
+		--reject: #f08069;
+		--reject-soft: #3a1c16;
+		--info: #6cc3d3;
+		--info-soft: #15313a;
+		--explored: #93aee8;
+		--explored-soft: #1f2a42;
+		--heuristic: #b7a2e6;
+		--heuristic-soft: #2a2340;
+		--node-fill: #1b1d22;
+		--node-stroke: #c9c7c1;
+		--edge: #9c9b96;
+		--dead: #6b6e75;
+		--wall: #7d808a;
+		--tok-0: #86abf0;
+		--tok-0-soft: #1d2a45;
+		--tok-1: #5fcca3;
+		--tok-1-soft: #143128;
+		--tok-2: #f0a066;
+		--tok-2-soft: #3a2515;
+		--tok-3: #c4a2f0;
+		--tok-3-soft: #2c2340;
+		--tok-4: #f07fab;
+		--tok-4-soft: #3b1b29;
+		--tok-5: #d6c76e;
+		--tok-5-soft: #33301a;
+		--backdrop: rgb(0 0 0 / 0.55);
+		--shadow-lg: 0 2px 6px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+		color-scheme: dark;
+	}
+}
+
+:root[data-theme='dark'] {
+	--bg: #141519;
+	--surface: #1b1d22;
+	--surface-2: #23252b;
+	--surface-3: #2c2f36;
+	--border: #2e3139;
+	--border-strong: #41454f;
+	--text: #e9e7e2;
+	--text-2: #b8b6b0;
+	--text-3: #8a8983;
+	--accent: #86a8ef;
+	--accent-hover: #a5bff4;
+	--accent-soft: #1e2a45;
+	--accent-contrast: #101218;
+	--focus: #86a8ef;
+	--shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+	--shadow: 0 1px 3px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.3);
+	--active: #f2c14e;
+	--active-soft: #3a3014;
+	--accept: #5cc98c;
+	--accept-soft: #16301f;
+	--reject: #f08069;
+	--reject-soft: #3a1c16;
+	--info: #6cc3d3;
+	--info-soft: #15313a;
+	--explored: #93aee8;
+	--explored-soft: #1f2a42;
+	--heuristic: #b7a2e6;
+	--heuristic-soft: #2a2340;
+	--node-fill: #1b1d22;
+	--node-stroke: #c9c7c1;
+	--edge: #9c9b96;
+	--dead: #6b6e75;
+	--wall: #7d808a;
+	--tok-0: #86abf0;
+	--tok-0-soft: #1d2a45;
+	--tok-1: #5fcca3;
+	--tok-1-soft: #143128;
+	--tok-2: #f0a066;
+	--tok-2-soft: #3a2515;
+	--tok-3: #c4a2f0;
+	--tok-3-soft: #2c2340;
+	--tok-4: #f07fab;
+	--tok-4-soft: #3b1b29;
+	--tok-5: #d6c76e;
+	--tok-5-soft: #33301a;
+	--backdrop: rgb(0 0 0 / 0.55);
+	--shadow-lg: 0 2px 6px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+	color-scheme: dark;
+}
+
+/* Syntax colors. Aliases of the palette above, so they follow the theme. */
+:root {
+	--syn-literal: var(--accept);
+	--syn-string: var(--accept);
+	--syn-operator: var(--accent);
+	--syn-paren: var(--text-3);
+	--syn-special: var(--heuristic);
+	--syn-name: var(--tok-2);
+	--syn-keyword: var(--tok-3);
+	--syn-number: var(--tok-0);
+	--syn-escape: var(--tok-4);
+	--syn-comment: var(--text-3);
+	--syn-punct: var(--text-3);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                 */
+/* ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	font-size: var(--text-base);
+	line-height: 1.6;
+	font-feature-settings: 'cv11', 'ss01';
+	-webkit-font-smoothing: antialiased;
+	overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: var(--font-serif);
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+	margin: 0 0 var(--space-3);
+	text-wrap: balance;
+}
+
+h1 {
+	font-size: var(--text-3xl);
+}
+h2 {
+	font-size: var(--text-2xl);
+}
+h3 {
+	font-size: var(--text-xl);
+}
+h4 {
+	font-size: var(--text-lg);
+}
+
+p {
+	margin: 0 0 var(--space-4);
+	text-wrap: pretty;
+}
+
+a {
+	color: var(--accent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.18em;
+}
+a:hover {
+	color: var(--accent-hover);
+}
+
+code,
+kbd,
+pre,
+samp {
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+	font-variant-ligatures: none;
+}
+
+:not(pre) > code {
+	background: var(--surface-2);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	padding: 0.05em 0.35em;
+}
+
+pre {
+	margin: 0;
+	overflow-x: auto;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
+::selection {
+	background: var(--accent-soft);
+}
+
+table {
+	border-collapse: collapse;
+}
+
+.visually-hidden {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.mono {
+	font-family: var(--font-mono);
+	font-variant-ligatures: none;
+}
+
+/* Keep in-page anchor targets clear of the sticky header. */
+html {
+	scroll-padding-top: calc(56px + var(--space-4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* Highlight classes (CodeEditor token coloring)                        */
+/* ------------------------------------------------------------------ */
+
+.hl-literal {
+	color: var(--syn-literal);
+}
+.hl-string {
+	color: var(--syn-string);
+}
+.hl-operator {
+	color: var(--syn-operator);
+	font-weight: 600;
+}
+.hl-paren {
+	color: var(--syn-paren);
+}
+.hl-special {
+	color: var(--syn-special);
+}
+.hl-name {
+	color: var(--syn-name);
+}
+.hl-keyword {
+	color: var(--syn-keyword);
+	font-weight: 600;
+}
+.hl-number {
+	color: var(--syn-number);
+}
+.hl-escape {
+	color: var(--syn-escape);
+}
+.hl-comment {
+	color: var(--syn-comment);
+	font-style: italic;
+}
+.hl-punct {
+	color: var(--syn-punct);
+}
+.hl-tok-0 {
+	color: var(--tok-0);
+}
+.hl-tok-1 {
+	color: var(--tok-1);
+}
+.hl-tok-2 {
+	color: var(--tok-2);
+}
+.hl-tok-3 {
+	color: var(--tok-3);
+}
+.hl-tok-4 {
+	color: var(--tok-4);
+}
+.hl-tok-5 {
+	color: var(--tok-5);
+}
