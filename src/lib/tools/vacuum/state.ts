@@ -1,6 +1,7 @@
 /**
- * The vacuum tool's URL state. A link carrying only `{ program }`
- * (LinkStates['vacuum']) is accepted; the other fields take their defaults.
+ * The vacuum tool's URL state: the configuration and the time step shown. A
+ * link carrying only some fields (LinkStates['vacuum']) is accepted; the others
+ * take their defaults.
  */
 import {
 	REFLEX_TABLE,
@@ -34,7 +35,11 @@ export interface VacuumToolState {
 	measure: MeasureId;
 }
 
-export type SavedVacuumState = Partial<VacuumToolState>;
+/** What the URL hash may carry: any configuration fields, and the index of the time step shown. */
+export type SavedVacuumState = Partial<VacuumToolState> & {
+	/** Index of the time step shown (0 = t 1); clamped to the run's length. */
+	step?: number;
+};
 
 const LETTER: Record<VacuumAction, string> = { Left: 'L', Right: 'R', Suck: 'S', NoOp: 'N' };
 
@@ -83,10 +88,11 @@ export function isSavedVacuumState(value: unknown): value is SavedVacuumState {
 		return false;
 	if (v.seed !== undefined && !isInt(v.seed, 0, MAX_SEED)) return false;
 	if (v.measure !== undefined && !isMeasureId(v.measure)) return false;
+	if (v.step !== undefined && !isInt(v.step, 0, MAX_TOOL_STEPS - 1)) return false;
 	return true;
 }
 
-/** Saved state with defaults for missing fields, names normalized. */
+/** Saved configuration with defaults for missing fields, names normalized (the step is not part of it). */
 export function completeVacuumState(saved: SavedVacuumState): VacuumToolState {
 	const d = defaultVacuumState();
 	const table = saved.table !== undefined ? decodeTable(saved.table) : null;

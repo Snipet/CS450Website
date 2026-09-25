@@ -49,6 +49,12 @@ describe('URL state', () => {
 		).toBe(true);
 	});
 
+	it('carries the time step shown, which is not part of the configuration', () => {
+		expect(isSavedVacuumState({ ...defaultVacuumState(), step: 0 })).toBe(true);
+		expect(isSavedVacuumState({ step: MAX_TOOL_STEPS - 1 })).toBe(true);
+		expect(completeVacuumState({ ...defaultVacuumState(), step: 4 })).toEqual(defaultVacuumState());
+	});
+
 	it('rejects fields of the wrong type or range', () => {
 		for (const bad of [
 			null,
@@ -66,7 +72,11 @@ describe('URL state', () => {
 			{ p: '0.1' },
 			{ seed: -1 },
 			{ seed: 1.5 },
-			{ measure: 'moves' }
+			{ measure: 'moves' },
+			{ step: -1 },
+			{ step: 1.5 },
+			{ step: MAX_TOOL_STEPS },
+			{ step: '3' }
 		]) {
 			expect(isSavedVacuumState(bad)).toBe(false);
 		}

@@ -51,6 +51,7 @@
 							<button
 								type="button"
 								class="name"
+								data-column={col.key}
 								aria-pressed={isSelected}
 								title="Show details of {col.name}"
 								onclick={() => onselect(col.key)}

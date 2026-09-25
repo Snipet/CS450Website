@@ -96,7 +96,8 @@ export function describeModel(model: SquareModel): string {
 
 /**
  * The vacuum world's task-environment properties in the order of Rational
- * Agents slides 9–16: the dimension, its value, and a short label.
+ * Agents slides 9–16 (the same values as the environments tool's vacuum
+ * world): the dimension, its value, and a short label.
  */
 export function environmentProperties(p: number): { name: string; value: string; label: string }[] {
 	const stochastic = p > 0;
@@ -110,6 +111,7 @@ export function environmentProperties(p: number): { name: string; value: string;
 		{ name: 'Episodic', value: 'Sequential', label: 'Sequential' },
 		{ name: 'Static', value: 'Static', label: 'Static' },
 		{ name: 'Discrete', value: 'Discrete', label: 'Discrete' },
-		{ name: 'Agents', value: 'Single', label: 'Single agent' }
+		{ name: 'Agents', value: 'Single', label: 'Single agent' },
+		{ name: 'Known', value: 'Known', label: 'Known' }
 	];
 }

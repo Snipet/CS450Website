@@ -152,8 +152,8 @@ export const TURING_TEST = {
 
 export const TOTAL_TURING_TEST = {
 	adds: 'Adds interaction with people and objects.',
-	/** What the robot would need on top of the written test. */
-	robot: ['Computer vision', 'Speech recognition/generation', 'Robotic manipulation'],
+	/** What the robot would need on top of the written test, as the slide lists it. */
+	robot: ['Computer vision and speech recognition/generation', 'Robotic manipulations'],
 	cite: cite(6)
 } as const;
 
@@ -265,11 +265,14 @@ export const WINOGRAD_VS_TURING = {
 export const STRONG_WEAK = {
 	weak: 'Computer is limited to being a tool for studying intelligence and developing useful technology.',
 	strong:
-		'Computer could (in principle) be programmed to actually be a mind, to be intelligent, to understand, perceive, have beliefs, and exhibit other cognitive states normally ascribed to human beings.',
+		'Computer could (in principle) be programmed to actually BE a mind, to be intelligent, to understand, perceive, have beliefs, and exhibit other cognitive states normally ascribed to human beings.',
 	chineseRoom: {
 		by: 'John Searle',
 		year: 1980,
-		/** Widely known outline of the thought experiment (the slide names it only). */
+		/**
+		 * Widely known outline of the thought experiment. The slide names it
+		 * only, so the page marks this text as not from the slide.
+		 */
 		outline:
 			'A person who does not understand Chinese follows written rules to answer questions written in Chinese; the answers can look fluent with no understanding of Chinese behind them.'
 	},

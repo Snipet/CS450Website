@@ -63,12 +63,12 @@
 		border-radius: var(--radius);
 		background: var(--surface);
 	}
+	/* The citation always sits under the title, whether or not the title wraps. */
 	.card-head {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: var(--space-1) var(--space-2);
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--space-1);
 	}
 	h3 {
 		margin: 0;

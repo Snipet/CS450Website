@@ -5,6 +5,8 @@
 import type { Preset } from '$lib/components/ui/types';
 import { defaultVacuumState, type VacuumToolState } from './state';
 
+const FIELDS = Object.keys(defaultVacuumState()) as (keyof VacuumToolState)[];
+
 const scenario = (s: Partial<VacuumToolState>): VacuumToolState => ({
 	...defaultVacuumState(),
 	...s
@@ -59,7 +61,7 @@ export const VACUUM_PRESETS: readonly Preset<VacuumToolState>[] = [
 		group: 'Deterministic environment',
 		label: 'Random agent',
 		description: 'Left, Right, Suck, or NoOp uniformly at random (seeded), 20 time steps.',
-		cite: { deck: 'agents', slide: 4 },
+		cite: { deck: 'agents', slide: 3 },
 		value: scenario({ program: 'random', steps: 20 })
 	},
 	{
@@ -80,3 +82,11 @@ export const VACUUM_PRESETS: readonly Preset<VacuumToolState>[] = [
 		value: scenario({ program: 'reflex', p: 0.1, steps: 40, seed: 3 })
 	}
 ];
+
+/**
+ * The preset whose configuration is exactly `state` (the first one, if
+ * several are), or null: the preset menu marks it as loaded.
+ */
+export function matchVacuumPreset(state: VacuumToolState): Preset<VacuumToolState> | null {
+	return VACUUM_PRESETS.find((p) => FIELDS.every((k) => p.value[k] === state[k])) ?? null;
+}

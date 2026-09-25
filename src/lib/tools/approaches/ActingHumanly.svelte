@@ -138,8 +138,11 @@
 		<p class="room">
 			<strong
 				>{STRONG_WEAK.chineseRoom.by}’s Chinese Room thought experiment ({STRONG_WEAK.chineseRoom
-					.year}).</strong
+					.year})</strong
 			>
+		</p>
+		<p class="room-outline">
+			<span class="aside-tag">Not on the slide</span>
 			{STRONG_WEAK.chineseRoom.outline}
 		</p>
 	</section>
@@ -230,7 +233,8 @@
 		gap: 6px;
 		padding: 3px 10px 3px 8px;
 		border: 1px solid color-mix(in srgb, var(--tok-0) 35%, transparent);
-		border-radius: 999px;
+		/* A pill on one line, a rounded box when a long item wraps. */
+		border-radius: 14px;
 		background: var(--tok-0-soft);
 		font-size: var(--text-sm);
 	}
@@ -360,5 +364,22 @@
 	.room {
 		font-size: var(--text-sm);
 		line-height: 1.6;
+	}
+	.room-outline {
+		margin-top: calc(-1 * var(--space-2));
+		color: var(--text-2);
+		font-size: var(--text-sm);
+		line-height: 1.6;
+	}
+	.aside-tag {
+		display: inline-block;
+		margin-right: var(--space-1);
+		padding: 0 7px;
+		border: 1px dashed var(--border-strong);
+		border-radius: 999px;
+		color: var(--text-3);
+		font-size: var(--text-xs);
+		line-height: 1.5;
+		white-space: nowrap;
 	}
 </style>

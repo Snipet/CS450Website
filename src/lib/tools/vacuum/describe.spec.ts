@@ -114,7 +114,8 @@ describe('world, model, and environment text', () => {
 			'Sequential',
 			'Static',
 			'Discrete',
-			'Single agent'
+			'Single agent',
+			'Known'
 		]);
 		expect(environmentProperties(0.1)[1]).toEqual({
 			name: 'Deterministic',

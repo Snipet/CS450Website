@@ -90,7 +90,10 @@ describe('approaches content', () => {
 			'Automated reasoning',
 			'Machine learning'
 		]);
-		expect(TOTAL_TURING_TEST.robot).toHaveLength(3);
+		expect(TOTAL_TURING_TEST.robot).toEqual([
+			'Computer vision and speech recognition/generation',
+			'Robotic manipulations'
+		]);
 		expect(COGNITIVE_MODELING.methods).toEqual([
 			'Introspection',
 			'Psychological experiments',

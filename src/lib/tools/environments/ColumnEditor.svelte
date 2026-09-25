@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import {
 		Button,
 		Callout,
@@ -48,6 +49,22 @@
 	const options = DIMENSIONS.map((d) =>
 		d.values.map((v) => ({ value: v.id as string, label: v.label, title: v.name }))
 	);
+
+	let copyButton: HTMLButtonElement | undefined = $state();
+
+	/** Clears a dimension; focus moves from the vanished clear button to the dimension's options. */
+	async function clear(d: Dimension) {
+		onvalue(d, undefined);
+		await tick();
+		document.querySelector<HTMLElement>(`#${uid}-${d}-control input`)?.focus();
+	}
+
+	/** Resets the values; focus moves from the vanished reset button to the copy button. */
+	async function reset() {
+		onreset();
+		await tick();
+		copyButton?.focus();
+	}
 </script>
 
 <Panel title={columnName(column)} subtitle={source.text}>
@@ -90,7 +107,7 @@
 						></span>
 						{d.label}
 					</span>
-					<div class="control">
+					<div class="control" id="{uid}-{d.id}-control">
 						<SegmentedControl
 							size="sm"
 							label={d.label}
@@ -104,7 +121,7 @@
 								size="sm"
 								label="Clear {d.label}"
 								class="clear"
-								onclick={() => onvalue(d.id, undefined)}
+								onclick={() => clear(d.id)}
 							/>
 						{/if}
 					</div>
@@ -128,12 +145,12 @@
 	{#snippet footer()}
 		<div class="actions">
 			{#if edited}
-				<Button size="sm" variant="secondary" onclick={onreset}>
+				<Button size="sm" variant="secondary" onclick={reset}>
 					{#snippet icon()}<Icon name="undo" size={15} />{/snippet}
 					Reset values
 				</Button>
 			{/if}
-			<Button size="sm" variant="secondary" onclick={onduplicate}>
+			<Button size="sm" variant="secondary" onclick={onduplicate} bind:element={copyButton}>
 				{#snippet icon()}<Icon name="copy" size={15} />{/snippet}
 				{column.kind === 'custom' ? 'Duplicate' : 'Edit a copy'}
 			</Button>

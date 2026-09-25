@@ -223,7 +223,7 @@
 
 	<div class="intro">
 		<p class="prompt">
-			Brainstorm AI applications and decide which approach is best for each application.
+			Brainstorm various AI applications and decide which approach is best for the application…
 			<CitationTag cite={BOARD_CITE} />
 		</p>
 		<p class="how">
@@ -462,8 +462,11 @@
 		.axis {
 			display: none;
 		}
+		/* Title and count on the first line, the table cell on its own line below. */
 		.zone-cell {
-			display: inline;
+			display: block;
+			flex-basis: 100%;
+			order: 3;
 		}
 		.add {
 			max-width: none;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import CitationTag from '$lib/components/ui/CitationTag.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -23,9 +24,21 @@
 		return `${result === 'correct' ? 'Correct' : 'Answer'}: ${answer.toLowerCase()}.`;
 	});
 
-	function reset() {
+	let revealButton: HTMLButtonElement | undefined = $state();
+	let againButton: HTMLButtonElement | undefined = $state();
+
+	// Each button replaces the other, so focus moves to the one that appears.
+	async function reveal() {
+		revealed = true;
+		await tick();
+		againButton?.focus();
+	}
+
+	async function reset() {
 		choice = null;
 		revealed = false;
+		await tick();
+		revealButton?.focus();
 	}
 </script>
 
@@ -74,12 +87,12 @@
 	</div>
 	<footer class="foot">
 		{#if revealed}
-			<Button size="sm" variant="ghost" onclick={reset}>
+			<Button size="sm" variant="ghost" onclick={reset} bind:element={againButton}>
 				{#snippet icon()}<Icon name="reset" size={15} />{/snippet}
 				Try again
 			</Button>
 		{:else}
-			<Button size="sm" onclick={() => (revealed = true)}>
+			<Button size="sm" onclick={reveal} bind:element={revealButton}>
 				{#snippet icon()}<Icon name="eye" size={15} />{/snippet}
 				Reveal answer
 			</Button>

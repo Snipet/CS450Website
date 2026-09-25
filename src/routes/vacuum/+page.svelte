@@ -53,7 +53,7 @@
 		signed,
 		worldFigureLabel
 	} from '$lib/tools/vacuum/describe';
-	import { VACUUM_PRESETS } from '$lib/tools/vacuum/presets';
+	import { VACUUM_PRESETS, matchVacuumPreset } from '$lib/tools/vacuum/presets';
 	import {
 		MAX_SEED,
 		MAX_TOOL_STEPS,
@@ -72,18 +72,16 @@
 	// ------------------------------------------------------------------
 
 	let cfg = $state<VacuumToolState>(defaultVacuumState());
-	let presetId = $state<string | null>('slide-3');
+	/** The preset whose configuration is shown, if any (marked in the preset menu). */
+	const presetId = $derived(matchVacuumPreset(cfg)?.id ?? null);
 
-	/** A control changed by hand: no preset is loaded any more. */
 	function set<K extends keyof VacuumToolState>(key: K, value: VacuumToolState[K]) {
 		cfg[key] = value;
-		presetId = null;
 	}
 
 	function loadPreset(preset: Preset<VacuumToolState>) {
 		stepper.pause();
 		Object.assign(cfg, preset.value);
-		presetId = preset.id;
 		stepper.first();
 	}
 
@@ -119,16 +117,17 @@
 
 	const stepper = new Stepper(() => run.steps.length, { speed: 2 });
 
-	syncToHash(() => ({ ...cfg }), {
+	const index = $derived(stepper.index);
+
+	syncToHash(() => ({ ...cfg, step: index }), {
 		validate: isSavedVacuumState,
 		onLoad(saved) {
+			stepper.pause();
 			Object.assign(cfg, completeVacuumState(saved));
-			presetId = null;
-			stepper.first();
+			stepper.set(saved.step ?? 0);
 		}
 	});
 
-	const index = $derived(stepper.index);
 	const step = $derived(run.steps[index]);
 	const fresh = $derived(index > 0 ? run.steps[index - 1].dirtied : []);
 	const tableRows = $derived(tableActions(table));
@@ -385,7 +384,7 @@
 				<div class="question">
 					<p class="q">Can a rational agent make mistakes?</p>
 					<CitationTag cite={{ deck: 'agents', slide: 4 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Yes. A rational agent maximizes <em>expected</em> performance given its percepts and built-in
 							knowledge; it is not omniscient, and a good choice can still have a bad outcome.
@@ -408,7 +407,7 @@
 				<div class="question">
 					<p class="q">Is this agent rational?</p>
 					<CitationTag cite={{ deck: 'agents', slide: 5 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							It depends on the performance measure and the properties of the environment. With +1
 							per clean square per time step and dirt that stays cleaned (p = 0), no agent program
@@ -431,7 +430,7 @@
 				<div class="question">
 					<p class="q">How many possible states? What if there are n possible locations?</p>
 					<CitationTag cite={{ deck: 'search', slide: 8 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							2 locations × 2² dirt patterns = {vacuumStateCount(2)} states: the eight initial states
 							above. With n locations there are n·2ⁿ states ({vacuumStateCount(3)} for n = 3, {vacuumStateCount(

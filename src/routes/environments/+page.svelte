@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import {
 		Button,
 		CitationTag,
@@ -98,11 +99,25 @@
 		commit(addCustom(env), 'added');
 	}
 
+	let addButton: HTMLButtonElement | undefined = $state();
+
+	/**
+	 * Moves focus to a column's header button (or "Add custom" when there is
+	 * none) after the control that had it went away.
+	 */
+	async function focusColumn(key: string | null) {
+		await tick();
+		const header = key ? document.querySelector<HTMLElement>(`button[data-column="${key}"]`) : null;
+		(header ?? addButton)?.focus();
+	}
+
 	function remove(key: string) {
 		const column = findColumn(env, key);
 		if (!column) return;
+		const i = env.columns.indexOf(column);
 		env = removeColumn(env, key);
 		message = announceColumn('removed', column);
+		focusColumn((env.columns[i] ?? env.columns[i - 1])?.key ?? null);
 	}
 
 	function duplicate(key: string) {
@@ -116,6 +131,7 @@
 	function resetTable() {
 		env = defaultEnvironmentsState();
 		message = 'Table reset to the slide 17 examples.';
+		focusColumn(null);
 	}
 
 	function addPoker() {
@@ -163,7 +179,7 @@
 				size="sm"
 				align="end"
 			/>
-			<Button size="sm" onclick={addCustomColumn} disabled={full}>
+			<Button size="sm" onclick={addCustomColumn} disabled={full} bind:element={addButton}>
 				{#snippet icon()}<Icon name="plus" size={15} />{/snippet}
 				Add custom
 			</Button>
@@ -246,7 +262,7 @@
 										fits{#if f.missing.length}; Known is not in the table, and the rules of a word
 											jumble are known{/if}.
 									{:else}
-										{f.differs.join(', ')}.
+										does not fit ({f.differs.join(', ')}).
 									{/if}
 								</li>
 							{/each}

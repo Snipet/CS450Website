@@ -125,7 +125,8 @@ export const EVENTS: readonly HistoryEvent[] = [
 	{
 		id: 'winograd',
 		year: 2013,
-		label: 'Levesque proposes Winograd schemas (“On Our Best Behavior”, IJCAI 2013)',
+		label:
+			'Levesque, “On Our Best Behavior” (IJCAI 2013): Winograd schemas as a better Turing test',
 		cite: cite(7)
 	},
 	{

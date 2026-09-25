@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { Button, Icon, Select } from '$lib/components/ui';
 	import {
 		PERCEPTS,
@@ -27,9 +28,18 @@
 		next[i] = action;
 		onchange(next);
 	}
+
+	let root: HTMLDivElement | undefined = $state();
+
+	/** Restores the slide 3 rules; the reset button is then disabled, so focus moves to the first row. */
+	async function reset() {
+		onreset();
+		await tick();
+		root?.querySelector('select')?.focus();
+	}
 </script>
 
-<div class="table-editor">
+<div class="table-editor" bind:this={root}>
 	<table>
 		<caption class="visually-hidden">Percept → action table</caption>
 		<thead>
@@ -56,7 +66,7 @@
 			{/each}
 		</tbody>
 	</table>
-	<Button size="sm" variant="ghost" disabled={isReflex} onclick={onreset}>
+	<Button size="sm" variant="ghost" disabled={isReflex} onclick={reset}>
 		{#snippet icon()}<Icon name="reset" size={15} />{/snippet}
 		Slide 3 rules
 	</Button>

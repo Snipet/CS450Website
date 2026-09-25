@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { Button, CitationTag, Icon, Panel, TextField } from '$lib/components/ui';
 	import type { Citation } from '$lib/lectures';
 	import {
@@ -28,6 +29,15 @@
 		if (!first) return null;
 		return cites.every((c) => c && c.deck === first.deck && c.slide === first.slide) ? first : null;
 	});
+	let fields: HTMLDivElement | undefined = $state();
+
+	/** Makes the copy; focus moves from the vanished button to its first PEAS field. */
+	async function writeCopy() {
+		onduplicate();
+		await tick();
+		fields?.querySelector('input')?.focus();
+	}
+
 	const subtitle = $derived(
 		linked && linked.name !== columnName(column) ? `of the ${linked.name.toLowerCase()}` : undefined
 	);
@@ -36,7 +46,7 @@
 <Panel title="PEAS" {subtitle}>
 	{#snippet actions()}<CitationTag cite={PEAS_CITE} />{/snippet}
 	{#if column.kind === 'custom'}
-		<div class="fields">
+		<div class="fields" bind:this={fields}>
 			{#each PEAS_PARTS as part (part.id)}
 				<div class="field">
 					<span class="letter" aria-hidden="true">{part.letter}</span>
@@ -76,7 +86,7 @@
 		{/if}
 	{:else}
 		<p class="none">The slides give no PEAS description for {columnName(column)}.</p>
-		<Button size="sm" variant="secondary" onclick={onduplicate}>
+		<Button size="sm" variant="secondary" onclick={writeCopy}>
 			{#snippet icon()}<Icon name="pencil" size={15} />{/snippet}
 			Write one in a copy
 		</Button>

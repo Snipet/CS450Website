@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { decks } from '$lib/lectures';
 import { parseWorldName, simulate } from '$lib/theory/agents/vacuum';
-import { VACUUM_PRESETS } from './presets';
-import { completeVacuumState, decodeTable, isSavedVacuumState } from './state';
+import { VACUUM_PRESETS, matchVacuumPreset } from './presets';
+import { completeVacuumState, decodeTable, defaultVacuumState, isSavedVacuumState } from './state';
 
 describe('vacuum presets', () => {
 	it('have unique ids, valid states, and citations within the decks', () => {
@@ -37,5 +37,12 @@ describe('vacuum presets', () => {
 		expect(total('table-reflex')).toBe(18);
 		// Never moves from B: B is cleaned at t = 1, A stays dirty.
 		expect(total('table-stays')).toBe(10);
+	});
+
+	it('are recognized from a configuration, so a reloaded link marks its preset', () => {
+		expect(matchVacuumPreset(defaultVacuumState())?.id).toBe('slide-3');
+		for (const p of VACUUM_PRESETS) expect(matchVacuumPreset({ ...p.value })?.id).toBe(p.id);
+		expect(matchVacuumPreset({ ...defaultVacuumState(), seed: 2 })).toBeNull();
+		expect(matchVacuumPreset({ ...defaultVacuumState(), initial: 'B CC' })).toBeNull();
 	});
 });
