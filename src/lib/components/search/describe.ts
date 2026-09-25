@@ -256,7 +256,10 @@ function childNotes(
 		groups.set(key, fresh);
 		notes.push({ key, text: () => text(fresh) });
 	};
-	const names = (list: SearchNode[]) => listNames(list.map(name));
+	// Parallel edges can generate the same state twice; name it once.
+	const unique = (list: SearchNode[]) => [...new Set(list.map(name))];
+	const names = (list: SearchNode[]) => listNames(unique(list));
+	const count = (list: SearchNode[]) => unique(list).length;
 
 	for (const c of children) {
 		switch (c.outcome) {
@@ -264,14 +267,14 @@ function childNotes(
 				group(
 					'explored',
 					c,
-					(l) => `${names(l)} ${isAre(l.length)} in the explored set; not added.`
+					(l) => `${names(l)} ${isAre(count(l))} in the explored set; not added.`
 				);
 				break;
 			case 'on-path':
 				group(
 					'on-path',
 					c,
-					(l) => `${names(l)} ${isAre(l.length)} already on this path; not added.`
+					(l) => `${names(l)} ${isAre(count(l))} already on this path; not added.`
 				);
 				break;
 			case 'frontier': {
@@ -280,7 +283,7 @@ function childNotes(
 					group(
 						'frontier',
 						c,
-						(l) => `${names(l)} ${isAre(l.length)} already on the frontier; not added.`
+						(l) => `${names(l)} ${isAre(count(l))} already on the frontier; not added.`
 					);
 				} else {
 					const how = rival.g < c.g ? 'a lower' : 'the same';

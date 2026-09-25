@@ -8,14 +8,22 @@ import {
 	TINY_GRAPH,
 	type WeightedGraph
 } from '$lib/theory/graphs';
+import {
+	vacuumStateSpace,
+	vacuumTransitions,
+	type SpaceAction
+} from '$lib/theory/agents/vacuum-space';
 import { overlapArea, project, type Box } from './geometry';
 import {
 	edgeKey,
 	fitGraph,
+	halfSize,
+	outlineDistance,
 	pathEdgeKeys,
 	prepareGraph,
 	sceneAt,
-	type GraphScene
+	type GraphScene,
+	type LoopSide
 } from './graph-scene';
 
 const romania = (shape: 'circle' | 'square' = 'square') =>
@@ -250,4 +258,201 @@ describe('fitGraph', () => {
 		const p = prepareGraph({ graph: ROMANIA_PROBLEM.graph, heuristic: ROMANIA_PROBLEM.h });
 		expect(fitGraph(p, { width: 640, height: 420 }).k).toBeGreaterThan(0.3);
 	});
+});
+
+describe('labelled edges (edgeLabel)', () => {
+	const LETTER: Record<SpaceAction, string> = { Left: 'L', Right: 'R', Suck: 'S' };
+	const SIDE: Record<SpaceAction, LoopSide> = { Left: 'left', Right: 'right', Suck: 'bottom' };
+	const vacuum = (n = 2, box?: { width: number; height: number }) => {
+		const actions = vacuumTransitions(n).map((t) => t.action);
+		return prepareGraph({
+			graph: vacuumStateSpace(n),
+			start: 'A DD',
+			edgeLabel: (_, i) => LETTER[actions[i]],
+			loopSide: (_, i) => SIDE[actions[i]],
+			nodeBox: box
+		});
+	};
+
+	it('keeps every edge, parallel self-loops included, with unique keys and labels', () => {
+		const p = vacuum();
+		expect(p.edges).toHaveLength(24);
+		expect(new Set(p.edges.map((e) => e.key)).size).toBe(24);
+		expect(p.edges.map((e) => e.index)).toEqual([...Array(24).keys()]);
+		// "A CD": Left and Suck do nothing, two loops on different sides (slide 9).
+		const loops = p.edges.filter((e) => e.from === 'A CD' && e.kind === 'loop');
+		expect(loops.map((e) => [e.text, e.side, e.nest])).toEqual([
+			['L', 'left', 0],
+			['S', 'bottom', 0]
+		]);
+		// Left/Right between the two states of a pattern bend to opposite sides; Suck is straight.
+		const r = p.edges.find((e) => e.from === 'A DD' && e.to === 'B DD')!;
+		const l = p.edges.find((e) => e.from === 'B DD' && e.to === 'A DD')!;
+		expect([r.kind, l.kind]).toEqual(['curve', 'curve']);
+		// Equal bends toward each edge's own side: the curves go to opposite sides.
+		expect(Math.abs(r.bend)).toBe(1);
+		expect(r.bend).toBe(l.bend);
+		const scene = sceneAt(p, 1);
+		const labelY = (from: string, to: string) =>
+			scene.edges.find((e) => e.from === from && e.to === to)!.label!.y;
+		const y = scene.byId.get('A DD')!.y;
+		expect(Math.sign(labelY('A DD', 'B DD') - y)).toBe(-Math.sign(labelY('B DD', 'A DD') - y));
+		expect(p.edges.find((e) => e.from === 'A DD' && e.to === 'A CD')!.kind).toBe('line');
+	});
+
+	it('the default merges edges exactly as before', () => {
+		const g: WeightedGraph = {
+			directed: true,
+			nodes: [{ id: 'A' }, { id: 'B' }],
+			edges: [
+				{ from: 'A', to: 'B', cost: 1 },
+				{ from: 'A', to: 'B', cost: 2 },
+				{ from: 'A', to: 'A', cost: 1 },
+				{ from: 'A', to: 'A', cost: 3 }
+			]
+		};
+		const merged = prepareGraph({ graph: g });
+		expect(merged.edges.map((e) => [e.key, e.text, e.side])).toEqual([
+			[edgeKey('A', 'B'), '1', 'top'],
+			[edgeKey('A', 'A'), '1', 'top']
+		]);
+		const every = prepareGraph({ graph: g, edgeLabel: (e) => `c${e.cost}` });
+		expect(every.edges.map((e) => e.text)).toEqual(['c1', 'c2', 'c1', 'c3']);
+		// Two loops with no side given: the free sides, away from the edge to B.
+		const sides = every.edges.filter((e) => e.kind === 'loop').map((e) => e.side);
+		expect(new Set(sides).size).toBe(2);
+		expect(sides).not.toContain('right');
+		// A null label draws none.
+		expect(prepareGraph({ graph: g, edgeLabel: () => null }).edges.every((e) => !e.text)).toBe(
+			true
+		);
+	});
+
+	it('spreads parallel edges over lanes so their labels do not coincide', () => {
+		const g: WeightedGraph = {
+			directed: false,
+			nodes: [
+				{ id: 'A', x: 0, y: 0 },
+				{ id: 'B', x: 300, y: 0 }
+			],
+			edges: [
+				{ from: 'A', to: 'B', cost: 1 },
+				{ from: 'B', to: 'A', cost: 2 },
+				{ from: 'A', to: 'B', cost: 3 }
+			]
+		};
+		const p = prepareGraph({ graph: g, edgeLabel: (e) => String(e.cost) });
+		expect(p.edges.map((e) => [e.kind, e.bend])).toEqual([
+			['curve', -2],
+			['line', 0],
+			['curve', 2]
+		]);
+		const s = sceneAt(p, 1);
+		const ys = s.edges.map((e) => e.label!.y);
+		expect(new Set(ys).size).toBe(3);
+		// Undirected: no arrowheads on the curves either.
+		expect(s.edges.every((e) => e.head === null)).toBe(true);
+	});
+
+	it('draws loops on the requested sides, labels outside them, nested when they share a side', () => {
+		const s = sceneAt(vacuum(), 1);
+		const node = s.byId.get('A CD')!;
+		const [left, bottom] = s.edges.filter((e) => e.from === 'A CD' && e.to === 'A CD');
+		expect(left.label!.x).toBeLessThan(node.x - 30);
+		expect(Math.abs(left.label!.y - node.y)).toBeLessThan(1);
+		expect(bottom.label!.y).toBeGreaterThan(node.y + 30);
+		expect(left.head).not.toBeNull();
+		const g: WeightedGraph = {
+			directed: true,
+			nodes: [{ id: 'A', x: 0, y: 0 }],
+			edges: [
+				{ from: 'A', to: 'A', cost: 1 },
+				{ from: 'A', to: 'A', cost: 2 }
+			]
+		};
+		const nested = sceneAt(
+			prepareGraph({ graph: g, edgeLabel: (e) => String(e.cost), loopSide: () => 'top' }),
+			1
+		);
+		const [inner, outer] = nested.edges;
+		expect(outer.label!.y).toBeLessThan(inner.label!.y - 10);
+		// The node's extent covers both loops and their labels.
+		expect(nested.nodes[0].ext.top).toBeGreaterThan(-outer.label!.y);
+	});
+});
+
+describe('boxes (nodeBox)', () => {
+	const graph = vacuumStateSpace(2);
+	const boxed = (k: number) =>
+		sceneAt(prepareGraph({ graph, nodeBox: { width: 36, height: 18 } }), k);
+
+	it('draws states as boxes of the given size, trimming edges to them', () => {
+		const s = boxed(1);
+		const n = s.byId.get('A DD')!;
+		expect(n.outline).toEqual({ kind: 'rect', halfW: 18, halfH: 9 });
+		expect(halfSize(n.outline)).toEqual({ hw: 18, hh: 9 });
+		expect(n.label.lines[0]).toMatchObject({ text: 'A DD', x: n.x, y: n.y });
+		// Suck from A DD goes straight down-left to A CD: it starts on the box's bottom edge.
+		const suck = s.edges.find((e) => e.from === 'A DD' && e.to === 'A CD')!;
+		const [, , y] = /^M([\d.-]+) ([\d.-]+)/.exec(suck.d)!.map(Number);
+		expect(y).toBeCloseTo(n.y + 9, 1);
+	});
+
+	it('shrinks the boxes when states crowd together', () => {
+		const s = boxed(0.2);
+		const o = s.byId.get('A DD')!.outline;
+		expect(o.kind).toBe('rect');
+		expect(halfSize(o).hw).toBeLessThan(18);
+		expect(halfSize(o).hw).toBeGreaterThanOrEqual(18 * 0.45 - 0.01);
+	});
+
+	it('leaves out edge labels and shrinks loops when states crowd together', () => {
+		const actions = vacuumTransitions(2).map((t) => t.action);
+		const p = prepareGraph({
+			graph,
+			edgeLabel: (_, i) => actions[i][0],
+			nodeBox: { width: 36, height: 18 }
+		});
+		expect(p.labelled).toBe(true);
+		expect(sceneAt(p, 1).edges.every((e) => e.label !== null)).toBe(true);
+		const crowded = sceneAt(p, 0.15);
+		expect(crowded.edges.every((e) => e.label === null)).toBe(true);
+		const loop = (s: GraphScene) => s.byId.get('A CD')!.ext.left;
+		expect(loop(crowded)).toBeLessThan(loop(sceneAt(p, 1)));
+		// Costs are never left out.
+		expect(sceneAt(prepareGraph({ graph }), 0.15).edges.every((e) => e.label !== null)).toBe(true);
+	});
+
+	it('outline distances of a box', () => {
+		const o = { kind: 'rect' as const, halfW: 20, halfH: 10 };
+		expect(outlineDistance(o, { x: 1, y: 0 })).toBe(20);
+		expect(outlineDistance(o, { x: 0, y: -1 })).toBe(10);
+		const d = Math.SQRT1_2;
+		expect(outlineDistance(o, { x: d, y: d })).toBeCloseTo(10 * Math.SQRT2);
+		expect(outlineDistance({ kind: 'square', half: 5 }, { x: 0, y: 1 })).toBe(5);
+	});
+
+	for (const width of [360, 1000]) {
+		it(`fits the labelled vacuum state space into a ${width} px viewport`, () => {
+			const actions = vacuumTransitions(2).map((t) => t.action);
+			const p = prepareGraph({
+				graph,
+				start: 'A DD',
+				edgeLabel: (_, i) => actions[i][0],
+				loopSide: (_, i) =>
+					actions[i] === 'Left' ? 'left' : actions[i] === 'Right' ? 'right' : 'bottom',
+				nodeBox: { width: 36, height: 18 }
+			});
+			const vp = { width, height: 420 };
+			const cam = fitGraph(p, vp);
+			const s = sceneAt(p, cam.k);
+			for (const n of s.nodes) {
+				const c = project(cam, vp, p.pos.get(n.id)!);
+				expect(c.x - n.ext.left).toBeGreaterThanOrEqual(-1);
+				expect(c.x + n.ext.right).toBeLessThanOrEqual(width + 1);
+				expect(c.y - n.ext.top).toBeGreaterThanOrEqual(-1);
+				expect(c.y + n.ext.bottom).toBeLessThanOrEqual(420 + 1);
+			}
+		});
+	}
 });

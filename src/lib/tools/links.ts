@@ -14,10 +14,19 @@ import { toolBySlug } from './registry';
 
 export interface LinkStates {
 	/** `graph` uses the graph text format (formatGraphText). */
-	search: { graph: string; strategy?: StrategyId; mode?: RepeatMode };
+	search: {
+		graph: string;
+		strategy?: StrategyId;
+		mode?: RepeatMode;
+		/** Weighted A* α. */
+		weight?: number;
+		/** DLS limit, or the largest IDS limit. */
+		depthLimit?: number;
+		goalTest?: 'expand' | 'generate';
+	};
 	heuristics: { graph: string };
-	strategies: { graph?: string };
-	'state-spaces': { problem?: 'vacuum' | 'romania' | 'puzzle'; squares?: number };
+	strategies: { graph?: string; mode?: RepeatMode };
+	'state-spaces': { problem?: 'vacuum' | 'romania' | 'puzzle' | 'robot'; squares?: number };
 	/** Boards as nine digits, row by row, 0 for the blank ("724506831"). */
 	'eight-puzzle': { start: string; goal?: string };
 	/** `grid` uses the grid text encoding (encodeGrid). */

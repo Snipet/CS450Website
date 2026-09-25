@@ -48,4 +48,4 @@ export {
 	type GraphHighlight,
 	type LegendKey
 } from './legend';
-export { type NodeShape } from './graph-scene';
+export { type LoopSide, type NodeFrame, type NodeShape } from './graph-scene';

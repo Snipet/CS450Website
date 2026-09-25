@@ -63,20 +63,33 @@ export function iterationNodes(
  * newest expansion first and siblings in successor order, priority queues by
  * priority with ties by id.
  */
+// Rebuilt frontiers per result and step: the graph, tree, and frontier views
+// all ask for the same step, and results are never mutated.
+const frontierCache = new WeakMap<SearchResult, Map<number, number[]>>();
+
 export function frontierOrder(result: SearchResult, step: number): number[] {
 	const s = result.steps[step];
 	if (!s) return [];
 	if (s.frontier) return s.frontier;
+	let byStep = frontierCache.get(result);
+	if (!byStep) frontierCache.set(result, (byStep = new Map()));
+	const hit = byStep.get(step);
+	if (hit) return hit;
 	const ids = [...frontierAfter(result, step)];
 	const nodes = result.nodes;
 	switch (frontierKind(result.strategy)) {
 		case 'fifo':
-			return ids.sort((a, b) => a - b);
+			ids.sort((a, b) => a - b);
+			break;
 		case 'lifo':
-			return ids.sort((a, b) => nodes[b].created - nodes[a].created || a - b);
+			ids.sort((a, b) => nodes[b].created - nodes[a].created || a - b);
+			break;
 		default:
-			return ids.sort((a, b) => (nodes[a].priority ?? 0) - (nodes[b].priority ?? 0) || a - b);
+			ids.sort((a, b) => (nodes[a].priority ?? 0) - (nodes[b].priority ?? 0) || a - b);
 	}
+	if (byStep.size >= 256) byStep.clear();
+	byStep.set(step, ids);
+	return ids;
 }
 
 /** Explored set after a step (state keys in insertion order); empty unless graph search. */
@@ -206,7 +219,7 @@ export function graphHighlightAt(
 			}
 		}
 	}
-	const dropped =
+	const dropped: string[] =
 		s.kind === 'expand'
 			? s.children
 					.map((id) => nodes[id])
@@ -217,8 +230,11 @@ export function graphHighlightAt(
 			: [];
 	const path =
 		s.kind === 'goal' && s.node !== null ? pathTo(nodes, s.node).map((id) => nodes[id].key) : [];
+	// A node cut off at the depth limit is not expanded: draw its state like the
+	// tree draws the node (dashed, dropped) rather than as being expanded.
+	if (s.kind === 'cutoff' && cur !== null) dropped.push(nodes[cur].key);
 	return {
-		current: cur === null ? undefined : nodes[cur].key,
+		current: cur === null || s.kind === 'cutoff' ? undefined : nodes[cur].key,
 		frontier,
 		explored,
 		path,

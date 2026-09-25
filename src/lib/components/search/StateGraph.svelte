@@ -5,13 +5,18 @@ small squares with the name beside them, as on the Romania map), step costs
 on edges, arrows on directed edges, an arrow from nowhere labelled "start",
 double outlines on goal states, optional h values, and search status colors.
 
+With `edgeLabel`, every edge is drawn with its own label (actions instead of
+costs); parallel edges bend apart and self-loops go to different sides
+(`loopSide`). With `nodeBox`, states are boxes and `nodePicture` draws inside
+each one (e.g. a vacuum-world state).
+
 Zoom with the buttons, +/− keys, or Ctrl/⌘ + wheel; drag to pan. The view
 refits when the graph changes (not when only the highlight changes).
 -->
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
-	import type { WeightedGraph } from '$lib/theory/graphs';
+	import type { GraphEdge, WeightedGraph } from '$lib/theory/graphs';
 	import { formatNumber } from './describe';
 	import { panBy, zoomAbout, type Camera, type Point } from './geometry';
 	import {
@@ -20,6 +25,8 @@ refits when the graph changes (not when only the highlight changes).
 		pathEdgeKeys,
 		prepareGraph,
 		sceneAt,
+		type LoopSide,
+		type NodeFrame,
 		type NodeShape,
 		type SceneLabel,
 		type SceneNode
@@ -52,6 +59,22 @@ refits when the graph changes (not when only the highlight changes).
 		autoHeight?: boolean;
 		/** Show a legend of the status colors in use under the drawing. */
 		legend?: boolean;
+		/**
+		 * Label of each edge (`index` into `graph.edges`), drawn instead of the cost;
+		 * null draws none. Every edge is then drawn separately.
+		 */
+		edgeLabel?: (edge: GraphEdge, index: number) => string | null;
+		/** Side of each self-loop (with `edgeLabel`); null picks a free side. */
+		loopSide?: (edge: GraphEdge, index: number) => LoopSide | null;
+		/** Draw states as boxes of this size in px (smaller when crowded) instead of `nodeShape`. */
+		nodeBox?: { width: number; height: number };
+		/** Content of each box (with `nodeBox`), drawn in SVG; the state name otherwise. */
+		nodePicture?: Snippet<[NodeFrame]>;
+		/**
+		 * Accessible name of a state (default: its name, h, and `status`, the words
+		 * for its highlight such as "being expanded" or "goal state").
+		 */
+		describeNode?: (id: string, status: readonly string[]) => string;
 		class?: string;
 	}
 
@@ -69,6 +92,11 @@ refits when the graph changes (not when only the highlight changes).
 		height = 420,
 		autoHeight = true,
 		legend = false,
+		edgeLabel,
+		loopSide,
+		nodeBox,
+		nodePicture,
+		describeNode,
 		class: className
 	}: Props = $props();
 
@@ -80,7 +108,19 @@ refits when the graph changes (not when only the highlight changes).
 	let measured = $state(0);
 	const width = $derived(measured > 0 ? measured : 640);
 
-	const prep = $derived(prepareGraph({ graph, start, goals, heuristic, nodeShape, showCosts }));
+	const prep = $derived(
+		prepareGraph({
+			graph,
+			start,
+			goals,
+			heuristic,
+			nodeShape,
+			showCosts,
+			edgeLabel,
+			loopSide,
+			nodeBox
+		})
+	);
 	const fitted = $derived(fitGraph(prep, { width, height }));
 	const fittedScene = $derived(sceneAt(prep, fitted.k));
 	/** Height of the fitted drawing, labels included. */
@@ -140,6 +180,7 @@ refits when the graph changes (not when only the highlight changes).
 
 	function nodeLabel(id: string): string {
 		const h = heuristic?.[id];
+		if (describeNode) return describeNode(id, statusWords(id));
 		return [id, h !== undefined ? `h = ${formatNumber(h)}` : null, ...statusWords(id)]
 			.filter(Boolean)
 			.join(', ');
@@ -320,7 +361,8 @@ refits when the graph changes (not when only the highlight changes).
 
 	function nodeClasses(id: string) {
 		return {
-			square: nodeShape === 'square',
+			square: nodeShape === 'square' && !nodeBox,
+			box: nodeBox !== undefined,
 			current: hl.current === id,
 			path: hl.path.has(id),
 			frontier: hl.frontier.has(id),
@@ -334,6 +376,15 @@ refits when the graph changes (not when only the highlight changes).
 	/** Outline rectangle of a node grown by `g` px (circles and pills use rx; squares are sharp). */
 	function rectOf(n: SceneNode, g = 0) {
 		const o = n.outline;
+		if (o.kind === 'rect') {
+			return {
+				x: n.x - o.halfW - g,
+				y: n.y - o.halfH - g,
+				width: 2 * (o.halfW + g),
+				height: 2 * (o.halfH + g),
+				rx: 2 + g / 2
+			};
+		}
 		if (o.kind === 'square') {
 			const h = o.half + g;
 			return { x: n.x - h, y: n.y - h, width: 2 * h, height: 2 * h, rx: g > 0 ? 1.5 : 0.5 };
@@ -349,7 +400,7 @@ refits when the graph changes (not when only the highlight changes).
 
 	/** Squares grow a little when they carry a status, so the color reads at map scale. */
 	function markerGrow(id: string): number {
-		if (nodeShape !== 'square') return 0;
+		if (nodeShape !== 'square' || nodeBox) return 0;
 		return hl.current === id || hl.path.has(id) || hl.frontier.has(id) ? 1.5 : 0;
 	}
 </script>
@@ -369,7 +420,18 @@ refits when the graph changes (not when only the highlight changes).
 		<!-- The name beside a small marker is part of the click target. -->
 		<rect class="hit" {...n.label.box} />
 	{/if}
-	{#if n.outline.kind !== 'square'}{@render labelText(n, n.label)}{/if}
+	{#if n.outline.kind === 'rect' && nodePicture}
+		{@const o = n.outline}
+		<g class="picture">
+			{@render nodePicture({
+				id: n.id,
+				x: n.x - o.halfW,
+				y: n.y - o.halfH,
+				width: 2 * o.halfW,
+				height: 2 * o.halfH
+			})}
+		</g>
+	{:else if n.outline.kind !== 'square'}{@render labelText(n, n.label)}{/if}
 {/snippet}
 
 {#snippet labelText(n: SceneNode, label: SceneLabel)}
@@ -403,13 +465,13 @@ refits when the graph changes (not when only the highlight changes).
 		>
 			<g transform="translate({tx} {ty})">
 				<g class="edges" aria-hidden="true">
-					{#each plainEdges as e (edgeKey(e.from, e.to))}
+					{#each plainEdges as e (e.key)}
 						<g class="edge">
 							<path class="line" d={e.d} />
 							{#if e.head}<path class="head" d={e.head} />{/if}
 						</g>
 					{/each}
-					{#each pathEdges as e (edgeKey(e.from, e.to))}
+					{#each pathEdges as e (e.key)}
 						<g class="edge on-path">
 							<path class="line" d={e.d} />
 							{#if e.headBold}<path class="head" d={e.headBold} />{/if}
@@ -428,28 +490,26 @@ refits when the graph changes (not when only the highlight changes).
 						>
 					</g>
 				{/if}
-				{#if showCosts}
-					<g class="costs" aria-hidden="true">
-						{#each scene.edges as e (edgeKey(e.from, e.to))}
-							{#if e.label}
-								<rect
-									class="cost-bg"
-									x={e.label.x - e.label.width / 2}
-									y={e.label.y - scene.fonts.cost * 0.62}
-									width={e.label.width}
-									height={scene.fonts.cost * 1.24}
-									rx="3"
-								/>
-								<text
-									class={['cost', { 'on-path': onPath(e.from, e.to) }]}
-									x={e.label.x}
-									y={e.label.y}
-									font-size={scene.fonts.cost}>{e.label.text}</text
-								>
-							{/if}
-						{/each}
-					</g>
-				{/if}
+				<g class={['costs', { actions: edgeLabel !== undefined }]} aria-hidden="true">
+					{#each scene.edges as e (e.key)}
+						{#if e.label}
+							<rect
+								class="cost-bg"
+								x={e.label.x - e.label.width / 2}
+								y={e.label.y - scene.fonts.cost * 0.62}
+								width={e.label.width}
+								height={scene.fonts.cost * 1.24}
+								rx="3"
+							/>
+							<text
+								class={['cost', { 'on-path': onPath(e.from, e.to) }]}
+								x={e.label.x}
+								y={e.label.y}
+								font-size={scene.fonts.cost}>{e.label.text}</text
+							>
+						{/if}
+					{/each}
+				</g>
 				<g class="nodes">
 					{#each scene.nodes as n (n.id)}
 						{#if onnodeclick}
@@ -493,7 +553,7 @@ refits when the graph changes (not when only the highlight changes).
 			<StatusLegend
 				class="graph-legend"
 				items={legendItems}
-				shape={nodeShape === 'square' ? 'square' : 'circle'}
+				shape={nodeShape === 'square' && !nodeBox ? 'square' : 'circle'}
 			/>
 		{/if}
 		<div class="zoombar" role="group" aria-label="Zoom (arrow keys pan)">
@@ -604,6 +664,10 @@ refits when the graph changes (not when only the highlight changes).
 	}
 	.cost.on-path {
 		fill: var(--accept);
+		font-weight: 600;
+	}
+	.actions .cost {
+		fill: var(--text);
 		font-weight: 600;
 	}
 	.start-label {
