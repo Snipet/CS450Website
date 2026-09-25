@@ -72,13 +72,19 @@ export function formatMs(ms: number): string {
 	return formatCount(Math.round(ms));
 }
 
-/** What a finished run found: "26 moves", "Stopped after 1,000,002 nodes", "No solution". */
+/**
+ * What a finished run found: "26 moves", "Stopped at the node budget (depth
+ * limit 20)", "No solution". The generated count of a stopped run is in its
+ * own column (it can pass the budget by the last expansion's children).
+ */
 export function runOutcomeText(run: SolverRun): string {
 	switch (run.outcome) {
 		case 'solved':
 			return `${run.length} ${run.length === 1 ? 'move' : 'moves'}`;
 		case 'limit':
-			return `Stopped after ${formatCount(run.generated)} nodes`;
+			return run.depthLimit !== null
+				? `Stopped at the node budget (depth limit ${run.depthLimit})`
+				: 'Stopped at the node budget';
 		default:
 			return run.explored > 0
 				? `No solution: ${formatCount(run.explored)} states explored`

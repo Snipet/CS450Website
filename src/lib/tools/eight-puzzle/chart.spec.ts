@@ -27,6 +27,18 @@ describe('niceTicks', () => {
 		expect(niceTicks(1, 3)).toEqual([0, 0.5, 1]);
 	});
 
+	it('keeps whole-number steps for counts (moves, h1, h2)', () => {
+		expect(niceTicks(1, 5, { integer: true })).toEqual([0, 1]);
+		expect(niceTicks(1, 3, { integer: true })).toEqual([0, 1]);
+		expect(niceTicks(2, 5, { integer: true })).toEqual([0, 1, 2]);
+		expect(niceTicks(3, 5, { integer: true })).toEqual([0, 1, 2, 3]);
+		expect(niceTicks(26, 3, { integer: true })).toEqual([0, 10, 20, 30]);
+		for (const max of [1, 2, 3, 4, 5, 7, 9, 13, 31, 47])
+			for (const count of [2, 3, 5, 9])
+				for (const t of niceTicks(max, count, { integer: true }))
+					expect(Number.isInteger(t), `${max} ${count}`).toBe(true);
+	});
+
 	it('returns [0] for empty ranges', () => {
 		expect(niceTicks(0)).toEqual([0]);
 		expect(niceTicks(-3)).toEqual([0]);

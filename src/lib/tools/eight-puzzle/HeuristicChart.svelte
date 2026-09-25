@@ -27,10 +27,10 @@
 	const points = $derived(chartPoints(boards, goal));
 	const last = $derived(Math.max(1, points.length - 1));
 	const yMax = $derived(Math.max(1, ...points.map((p) => Math.max(p.h2, p.left))));
-	const yTicks = $derived(niceTicks(yMax, 3));
+	const yTicks = $derived(niceTicks(yMax, 3, { integer: true }));
 	const yTop = $derived(yTicks[yTicks.length - 1]);
 	const xTicks = $derived(
-		niceTicks(last, Math.max(2, Math.floor(width / 90))).filter((t) => t <= last)
+		niceTicks(last, Math.max(2, Math.floor(width / 90)), { integer: true }).filter((t) => t <= last)
 	);
 	const plotW = $derived(Math.max(10, width - M.left - M.right));
 	const plotH = HEIGHT - M.top - M.bottom;

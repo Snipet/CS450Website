@@ -107,7 +107,11 @@ and its counters.
 	{#if stats.path && optimal !== null && !optimalPath}
 		<p class="note">
 			Optimal cost {formatCost(optimal)}{#if strategy === 'wastar'}; weighted A* guarantees at most
-				α · C* = {formatNumber(weight)} × {formatCost(optimal)} = {formatCost(weight * optimal)}
+				<span class="nowrap"
+					>α · C* = {formatNumber(weight)} × {formatCost(optimal)} = {formatCost(
+						weight * optimal
+					)}</span
+				>
 				with an admissible h{/if}.
 		</p>
 	{/if}
@@ -192,6 +196,9 @@ and its counters.
 	}
 	.cost {
 		font-family: var(--font-mono);
+	}
+	.nowrap {
+		white-space: nowrap;
 	}
 	.note {
 		margin: 0;

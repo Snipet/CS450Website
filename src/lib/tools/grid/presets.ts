@@ -85,7 +85,7 @@ export const GRID_TOOL_PRESETS: readonly Preset<GridScenario>[] = [
 		group: 'Grids',
 		label: 'Wall with a gap',
 		description: 'Greedy best-first vs. A* when the straight line to the goal is blocked.',
-		cite: { deck: 'informed', slide: [12, 13] },
+		cite: { deck: 'informed', slide: 13 },
 		value: scenario({
 			layout: 'wall-gap',
 			algorithm: 'greedy',

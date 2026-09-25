@@ -32,7 +32,7 @@
 				<th scope="col" class="num">Nodes generated</th>
 				<th scope="col" class="num">Max frontier</th>
 				<th scope="col" class="result">Solution length</th>
-				<th scope="col" class="num">Time (ms)</th>
+				<th scope="col" class="num">Time <span class="unit">(ms)</span></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -67,7 +67,7 @@
 									<span class="len">{formatCount(run.length)}</span>
 									{#if optimalLength !== null && run.length > optimalLength}
 										<span class="extra">+{run.length - optimalLength} over optimal</span>
-									{:else if optimalLength !== null && s.optimal}
+									{:else if optimalLength !== null}
 										<span class="extra ok">optimal</span>
 									{/if}
 								{:else}
@@ -137,6 +137,9 @@
 	thead .num {
 		white-space: normal;
 	}
+	.unit {
+		text-transform: none;
+	}
 	.solver {
 		min-width: 11rem;
 	}
@@ -204,8 +207,8 @@
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 	}
-	/* Narrow: one card per solver, each value labelled. */
-	@container (max-width: 560px) {
+	/* Narrow (below the table's natural width of about 46rem): one card per solver, each value labelled. */
+	@container (max-width: 48rem) {
 		table,
 		tbody,
 		tr {

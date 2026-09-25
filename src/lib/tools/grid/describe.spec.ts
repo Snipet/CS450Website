@@ -8,7 +8,7 @@ import {
 	type Grid
 } from '$lib/theory/grid';
 import { search, type StrategyId } from '$lib/theory/search';
-import { describeGridStep, formatCost, pathSummary, shortGridStep } from './describe';
+import { describeGridStep, formatCost, pathSummary, shortGridStep, stepCounts } from './describe';
 
 const run = (grid: Grid, strategy: StrategyId, diagonal = true) =>
 	search(gridProblem(grid, { diagonal, heuristic: 'euclidean' }), {
@@ -31,6 +31,15 @@ describe('pathSummary', () => {
 	it('counts moves and rounds the cost', () => {
 		expect(pathSummary(24, 16 + 8 * Math.SQRT2)).toBe('24 moves, cost 27.31');
 		expect(pathSummary(1, 1)).toBe('1 move, cost 1');
+	});
+});
+
+describe('stepCounts', () => {
+	it('counts expanded cells and the frontier with the right plural', () => {
+		expect(stepCounts(203, 68)).toBe('203 cells expanded, 68 on the frontier');
+		expect(stepCounts(1, 0)).toBe('1 cell expanded, 0 on the frontier');
+		expect(stepCounts(0, 1)).toBe('0 cells expanded, 1 on the frontier');
+		expect(stepCounts(2125, 41)).toBe('2,125 cells expanded, 41 on the frontier');
 	});
 });
 

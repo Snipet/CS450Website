@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import {
 		Button,
 		Callout,
@@ -47,7 +47,12 @@
 	import { tool } from '$lib/tools/catalog/grid';
 	import GridLegend from '$lib/tools/grid/GridLegend.svelte';
 	import RunCard from '$lib/tools/grid/RunCard.svelte';
-	import { describeGridStep, pathSummary, shortGridStep } from '$lib/tools/grid/describe';
+	import {
+		describeGridStep,
+		pathSummary,
+		shortGridStep,
+		stepCounts
+	} from '$lib/tools/grid/describe';
 	import { GRID_TOOL_PRESETS, type GridScenario } from '$lib/tools/grid/presets';
 	import {
 		GRID_ALGORITHMS,
@@ -228,6 +233,20 @@
 		stepper.last();
 	}
 
+	let boardBody = $state<HTMLElement>();
+
+	/** Loads a preset from an answer below and brings the grid into view. */
+	async function loadPresetById(id: string) {
+		const preset = GRID_TOOL_PRESETS.find((p) => p.id === id);
+		if (!preset) return;
+		loadPreset(preset);
+		await tick();
+		if (!boardBody) return;
+		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		boardBody.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+		boardBody.focus({ preventScroll: true });
+	}
+
 	// ------------------------------------------------------------------
 	// Text
 	// ------------------------------------------------------------------
@@ -240,7 +259,7 @@
 	): string {
 		const at = Math.min(index, timeline.steps - 1);
 		const head = `${strategyName(strategy)} on the ${grid.width} × ${grid.height} grid, start ${cellLabel(grid, grid.start)}, goal ${cellLabel(grid, grid.goal)}, ${wallCount(grid)} walls.`;
-		const now = `After step ${at + 1} of ${timeline.steps}: ${stats.expanded} cells expanded, ${stats.frontier} on the frontier.`;
+		const now = `After step ${at + 1} of ${timeline.steps}: ${stepCounts(stats.expanded, stats.frontier)}.`;
 		const end = stats.path
 			? ` Path found: ${pathSummary(stats.path.moves, stats.path.cost)}.`
 			: stats.failed && result.failure === 'exhausted'
@@ -362,7 +381,7 @@
 			</Button>
 		{/snippet}
 
-		<div class="board-body" tabindex="-1" {@attach stepperKeys(stepper)}>
+		<div class="board-body" tabindex="-1" bind:this={boardBody} {@attach stepperKeys(stepper)}>
 			<StepControls {stepper} speeds={[0.25, 0.5, 1, 2, 4, 8]} ariaLabel="Search steps">
 				{#snippet label(i)}
 					{#if runB && compare}
@@ -437,7 +456,7 @@
 					<thead>
 						<tr>
 							<th scope="col">Heuristic</th>
-							<th scope="col" class="formula-col">h(n)</th>
+							<th scope="col" class="formula-col math">h(n)</th>
 							<th scope="col">Admissible with</th>
 						</tr>
 					</thead>
@@ -460,10 +479,10 @@
 			</div>
 			<p class="note">
 				dx and dy count the columns and rows between a cell and the goal. An admissible heuristic
-				never overestimates the true cost h*(n) <CitationTag
-					cite={{ deck: 'informed', slide: 25 }}
-				/>. Weighted A* orders the frontier by g(n) + α·h(n); with an admissible h its path costs at
-				most α times the optimal cost
+				never overestimates the true cost <span class="nowrap">h*(n)</span>
+				<CitationTag cite={{ deck: 'informed', slide: 25 }} />. Weighted A* orders the frontier by
+				<span class="nowrap">g(n) + α·h(n)</span>; with an admissible h its path costs at most α
+				times the optimal cost
 				<CitationTag cite={{ deck: 'informed', slide: 38 }} />. With h = 0, A* is uniform-cost
 				search.
 			</p>
@@ -474,26 +493,33 @@
 				<div class="question">
 					<p class="q">When is UCS equivalent to BFS?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 45 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
-							When all step costs are equal. With 4-connected moves every step costs 1, so
-							uniform-cost search takes cells off the frontier in the same order as breadth-first
-							search (ties go to the node added first) and returns a path of the same cost. With
-							diagonal moves (cost √2) they differ: see the preset “BFS vs. UCS with diagonal
-							moves”.
+							When all step costs are equal <CitationTag
+								cite={{ deck: 'uninformed', slide: 40 }}
+							/>. With 4-connected moves every step costs 1, so uniform-cost search takes cells off
+							the frontier in the same order as breadth-first search (ties go to the node added
+							first) and returns a path of the same cost. With diagonal moves (cost √2) they differ.
 						</p>
+						<Button size="sm" onclick={() => loadPresetById('bfs-vs-ucs-diagonal')}>
+							{#snippet icon()}<Icon name="play" />{/snippet}
+							Load BFS vs. UCS
+						</Button>
 					</Disclosure>
 				</div>
 				<div class="question">
 					<p class="q">How can we fix the greedy problem?</p>
 					<CitationTag cite={{ deck: 'informed', slide: 15 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Keep track of the distance already traveled, g(n), in addition to the estimated
 							distance remaining, h(n): A* orders the frontier by f(n) = g(n) + h(n)
-							<CitationTag cite={{ deck: 'informed', slide: 16 }} />. The preset “Greedy best-first
-							vs. A*” runs both on the concave obstacle.
+							<CitationTag cite={{ deck: 'informed', slide: 16 }} />.
 						</p>
+						<Button size="sm" onclick={() => loadPresetById('greedy-vs-astar')}>
+							{#snippet icon()}<Icon name="play" />{/snippet}
+							Load greedy vs. A*
+						</Button>
 					</Disclosure>
 				</div>
 			</div>
@@ -593,7 +619,7 @@
 		padding: var(--space-2) var(--space-3) var(--space-2) 0;
 		border-bottom: 1px solid var(--border);
 		text-align: left;
-		vertical-align: top;
+		vertical-align: baseline;
 	}
 	thead th {
 		color: var(--text-3);
@@ -601,6 +627,10 @@
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
+	}
+	thead th.math {
+		letter-spacing: 0;
+		text-transform: none;
 	}
 	tbody th {
 		font-weight: 500;
@@ -636,6 +666,9 @@
 			white-space: normal;
 		}
 	}
+	.nowrap {
+		white-space: nowrap;
+	}
 	.muted {
 		display: block;
 		color: var(--text-3);
@@ -660,6 +693,7 @@
 		align-self: stretch;
 	}
 	.question p:not(.q) {
+		margin: 0 0 var(--space-3);
 		font-size: var(--text-sm);
 	}
 </style>

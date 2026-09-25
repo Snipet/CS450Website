@@ -26,15 +26,17 @@ export function chartPoints(boards: readonly Board[], goal: Board): ChartPoint[]
 /**
  * Round tick values from 0 up to the first tick at or above `max`: steps of
  * 1, 2 or 5 times a power of ten, about `count` intervals, choosing the
- * smallest top among `count` to `count + 2` intervals.
+ * smallest top among `count` to `count + 2` intervals. With `integer`, steps
+ * are whole numbers (for counts such as moves, h1 and h2).
  */
-export function niceTicks(max: number, count = 4): number[] {
+export function niceTicks(max: number, count = 4, options: { integer?: boolean } = {}): number[] {
 	if (!(max > 0) || !Number.isFinite(max)) return [0];
 	let best: { step: number; top: number } | null = null;
 	for (let n = Math.max(1, count); n <= Math.max(1, count) + 2; n++) {
 		const raw = max / n;
 		const mag = 10 ** Math.floor(Math.log10(raw));
-		const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag;
+		const nice = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag;
+		const step = options.integer ? Math.max(1, nice) : nice;
 		const top = Math.ceil(max / step) * step;
 		if (!best || top < best.top) best = { step, top };
 	}

@@ -82,9 +82,16 @@ describe('run text', () => {
 	it('states what a run found', () => {
 		expect(runOutcomeText(run({}))).toBe('26 moves');
 		expect(runOutcomeText(run({ length: 1 }))).toBe('1 move');
+		// The budget is checked after each expansion, so the count can pass it slightly;
+		// the text names the budget and how deep IDS got rather than the raw count.
 		expect(
-			runOutcomeText(run({ outcome: 'limit', generated: 1_000_002, length: null, budget: 1e6 }))
-		).toBe('Stopped after 1,000,002 nodes');
+			runOutcomeText(
+				run({ outcome: 'limit', generated: 1_000_002, length: null, budget: 1e6, depthLimit: 20 })
+			)
+		).toBe('Stopped at the node budget (depth limit 20)');
+		expect(runOutcomeText(run({ outcome: 'limit', length: null }))).toBe(
+			'Stopped at the node budget'
+		);
 		expect(runOutcomeText(run({ outcome: 'exhausted', explored: 181_440, length: null }))).toBe(
 			'No solution: 181,440 states explored'
 		);

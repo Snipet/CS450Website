@@ -513,7 +513,7 @@
 							Yes. Every misplaced tile has to move at least once, so h1 never overestimates. Each
 							move slides one tile one square, so every tile needs at least its Manhattan distance
 							in moves, and h2 never overestimates either. Both are exact solution costs of relaxed
-							problems (slide 33).
+							problems <CitationTag cite={{ deck: 'informed', slide: 33 }} />.
 						</p>
 					</Disclosure>
 				</div>

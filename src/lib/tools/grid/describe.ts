@@ -19,6 +19,11 @@ export function formatCost(cost: number): string {
 	return cost.toFixed(2);
 }
 
+/** "203 cells expanded, 68 on the frontier". */
+export function stepCounts(expanded: number, frontier: number): string {
+	return `${plural(expanded, 'cell')} expanded, ${frontier.toLocaleString('en-US')} on the frontier`;
+}
+
 /** "24 moves, cost 27.31". */
 export function pathSummary(moves: number, cost: number): string {
 	return `${plural(moves, 'move')}, cost ${formatCost(cost)}`;
