@@ -12,6 +12,7 @@ import { setStateH, specText } from './edit';
 import {
 	HEURISTIC_PRESETS,
 	INFLATED_SLD,
+	basePresetFor,
 	matchPreset,
 	presetById,
 	presetForSpec,
@@ -60,6 +61,22 @@ describe('heuristics presets', () => {
 		expect(presetForSpec(specText(edited), edited)?.id).toBe('romania-sld');
 		const other = { ...edited, start: 'Zerind' };
 		expect(presetForSpec(specText(other), other)).toBeUndefined();
+	});
+
+	it('keep the saved preset only while the graph is still its graph', () => {
+		const inflated = presetById('romania-inflated')!.value.graph;
+		const spec = parseGraphText(inflated).spec!;
+		// A new start or goal on the same map keeps the saved preset.
+		const moved = { ...spec, start: 'Zerind' };
+		expect(basePresetFor('romania-inflated', specText(moved), moved)?.id).toBe('romania-inflated');
+		// A different graph typed into the editor drops it (no stale preset note or Reset).
+		const typed = 'start: A\ngoal: B\nA - B 1\nh: A=1';
+		const other = parseGraphText(typed).spec!;
+		expect(basePresetFor('romania-sld', typed, other)).toBeUndefined();
+		// ...and falls back to the preset with the same problem, if any.
+		const tiny = presetById('tiny-zero')!.value.graph;
+		expect(basePresetFor('romania-sld', tiny, parseGraphText(tiny).spec!)?.id).toBe('tiny-zero');
+		expect(basePresetFor(null, inflated, spec)?.id).toBe('romania-inflated');
 	});
 
 	it('expose their heuristic and label', () => {

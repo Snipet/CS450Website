@@ -20,9 +20,12 @@ import {
 	optimalPath,
 	overestimates,
 	runAStar,
+	stopReason,
 	verdictSummary,
 	verdicts,
-	violationText
+	violationText,
+	weightedBound,
+	weightedBoundNote
 } from './analysis';
 import { perfectHeuristic, scaleHeuristic, zeroHeuristic } from './edit';
 import { INFLATED_SLD } from './presets';
@@ -207,6 +210,21 @@ describe('weighted A* (slide 38)', () => {
 		expect(run.popped).toBeLessThan(astar.popped);
 	});
 
+	it('the bound α · C* covers graph search only with a consistent h', () => {
+		// A* gone wrong: admissible, not consistent. With α = 1.1 graph search
+		// still drops the path through A and returns 6 > 1.1 × 5.
+		const graph = runAStar(ASTAR_WRONG_PROBLEM, ASTAR_WRONG_PROBLEM.h!, 'graph', 5, 1.1);
+		expect(graph.cost).toBe(6);
+		expect(graph.cost!).toBeGreaterThan(1.1 * 5);
+		const tree = runAStar(ASTAR_WRONG_PROBLEM, ASTAR_WRONG_PROBLEM.h!, 'tree', 5, 1.1);
+		expect(tree.cost!).toBeLessThanOrEqual(1.1 * 5);
+		expect(weightedBound(verdicts(ASTAR_WRONG_PROBLEM))).toBe('tree');
+		expect(weightedBound(verdicts(ROMANIA_PROBLEM))).toBe('both');
+		expect(weightedBound(verdicts(ROMANIA_PROBLEM, INFLATED_SLD))).toBe('none');
+		expect(weightedBoundNote('tree')).toContain('not consistent');
+		expect(weightedBoundNote('none')).toContain('not admissible');
+	});
+
 	it('α = 1 is plain A*', () => {
 		expect(runAStar(ROMANIA_PROBLEM, SLD_BUCHAREST, 'tree', 418, 1).strategy).toBe('astar');
 	});
@@ -228,6 +246,10 @@ describe('weighted A* (slide 38)', () => {
 		expect(run.stopped).toBe(true);
 		expect(run.cost).toBeNull();
 		expect(run.optimal).toBeNull();
+		// Zero-cost loop: 5,000 nodes come off the frontier before 20,000 are generated.
+		expect(run.popped).toBe(5000);
+		expect(stopReason(run)).toBe('at the limit of 5,000 nodes taken off the frontier');
+		expect(stopReason(runAStar(ROMANIA_PROBLEM, SLD_BUCHAREST, 'tree', 418))).toBeNull();
 	});
 });
 

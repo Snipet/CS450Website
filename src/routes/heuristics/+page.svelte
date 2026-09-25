@@ -19,9 +19,11 @@
 	import {
 		ROMANIA,
 		checkHeuristic,
+		layoutGraph,
 		parseGraphText,
 		shortestPath,
-		type GraphProblemSpec
+		type GraphProblemSpec,
+		type WeightedGraph
 	} from '$lib/theory/graphs';
 	import { tool } from '$lib/tools/catalog/heuristics';
 	import ConsistencyTable from '$lib/tools/heuristics/ConsistencyTable.svelte';
@@ -42,6 +44,7 @@
 		runAStar,
 		verdictSummary,
 		verdicts,
+		weightedBound,
 		type SecondChoice
 	} from '$lib/tools/heuristics/analysis';
 	import {
@@ -53,6 +56,7 @@
 		scaledLabel,
 		setStateH,
 		specText,
+		stepFrom,
 		withGoal,
 		withHeuristic,
 		withStart,
@@ -61,9 +65,8 @@
 	} from '$lib/tools/heuristics/edit';
 	import {
 		HEURISTIC_PRESETS,
+		basePresetFor,
 		matchPreset,
-		presetById,
-		presetForSpec,
 		presetHeuristic,
 		type HeuristicsScenario
 	} from '$lib/tools/heuristics/presets';
@@ -138,7 +141,7 @@
 
 	const exactPreset = $derived(matchPreset(validText) ?? null);
 	/** The preset the problem comes from (for Reset and "the preset's heuristic"). */
-	const basePreset = $derived(presetById(presetId) ?? presetForSpec(validText, spec) ?? null);
+	const basePreset = $derived(basePresetFor(presetId, validText, spec) ?? null);
 	const baseH = $derived(basePreset ? presetHeuristic(basePreset) : null);
 	const edited = $derived(basePreset !== null && exactPreset?.id !== basePreset.id);
 
@@ -169,7 +172,11 @@
 		cStar !== null && treeRun.cost !== null ? fBands(treeRun.result, cStar) : null
 	);
 
-	const resolved = $derived(resolveSecond(second, spec, h1, baseH));
+	/** The choice in effect: "the preset's heuristic" without a preset is h = 0. */
+	const secondShown = $derived<SecondChoice>(
+		second.kind === 'preset' && !baseH ? { kind: 'zero' } : second
+	);
+	const resolved = $derived(resolveSecond(secondShown, spec, h1, baseH));
 	const dom = $derived(dominance(spec, h1, resolved.h));
 	const domRuns = $derived({
 		h1: treeRun,
@@ -333,6 +340,26 @@
 	// Drawing
 	// ------------------------------------------------------------------
 
+	/**
+	 * The graph to draw, with a position for every state. Typed graphs without
+	 * `at:` lines are laid out once per graph (states and edges) instead of on
+	 * every change of h, the start, or the goal: the layout of a 300-state graph
+	 * takes about half a second.
+	 */
+	let drawnMemo: { key: string; graph: WeightedGraph } | null = null;
+	const drawnGraph = $derived.by(() => {
+		const g = spec.graph;
+		const key = JSON.stringify([g.directed, g.nodes, g.edges]);
+		if (drawnMemo?.key !== key) {
+			const pos = layoutGraph(g);
+			drawnMemo = {
+				key,
+				graph: { ...g, nodes: g.nodes.map((n) => ({ ...n, ...pos.get(n.id)! })) }
+			};
+		}
+		return drawnMemo.graph;
+	});
+
 	const ROMANIA_CITIES = new Set(ROMANIA.nodes.map((n) => n.id));
 	const isMap = $derived(
 		spec.graph.nodes.length === ROMANIA_CITIES.size &&
@@ -351,6 +378,8 @@
 		dropped: 'h(n) > h*(n)',
 		heuristic: 'h(n)'
 	});
+	/** How the states name their marks: an overestimate, not a repeated state. */
+	const graphStatusText = { dropped: 'h(n) > h*(n)', path: 'On a cheapest path' };
 	const graphLabel = $derived(
 		`${spec.graph.directed ? 'Directed' : 'Undirected'} state-space graph with ${spec.graph.nodes.length} states, start ${spec.start}, ${
 			spec.goals.length === 1 ? 'goal' : 'goals'
@@ -476,7 +505,7 @@
 						bind:value={factor}
 						min={MIN_FACTOR}
 						max={MAX_FACTOR}
-						step={0.1}
+						step={stepFrom(factor, 0.1)}
 						disabled={textHasErrors}
 					/>
 					<Button size="sm" disabled={textHasErrors} onclick={scaleH}>× h</Button>
@@ -510,7 +539,7 @@
 			<Panel title="State space" subtitle="with h(n)" padding="none">
 				<div class="figure">
 					<StateGraph
-						graph={spec.graph}
+						graph={drawnGraph}
 						start={spec.start}
 						goals={spec.goals}
 						heuristic={h1}
@@ -520,6 +549,7 @@
 						onnodeclick={(id) => select(id, true)}
 						height={440}
 						ariaLabel={graphLabel}
+						statusText={graphStatusText}
 					/>
 					<StatusLegend
 						items={legendItems}
@@ -631,7 +661,7 @@
 	<Panel title="Dominance and combining">
 		<DominanceView
 			report={dom}
-			{second}
+			second={secondShown}
 			labels={{ h1: spec.hLabel?.trim() || 'this h', h2: resolved.label }}
 			runs={domRuns}
 			hasPreset={baseH !== null}
@@ -673,7 +703,7 @@
 				{alpha}
 				runs={weightedRuns}
 				{cStar}
-				admissible={v.admissible}
+				bound={weightedBound(v)}
 				onalpha={(a) => (alpha = a)}
 			/>
 			<blockquote>

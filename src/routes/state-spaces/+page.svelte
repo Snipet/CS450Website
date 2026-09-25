@@ -497,9 +497,9 @@
 			{/each}
 		</dl>
 		<p class="note">
-			The slide’s figures. Half of the (n + 1)! arrangements of the tiles and the blank can be
-			reached: 9!/2 = 181,440 for the 8-puzzle, 16!/2 ≈ 1.05 × 10¹³ for the 15-puzzle, 25!/2 ≈ 7.8 ×
-			10²⁴ for the 24-puzzle.
+			Counts as on the slide. From a given state, half of the (n + 1)! arrangements of the tiles and
+			the blank can be reached: 9!/2 = 181,440 for the 8-puzzle, 16!/2 ≈ 1.05 × 10¹³ (about 10.5
+			trillion) for the 15-puzzle, and 25!/2 ≈ 7.8 × 10²⁴ for the 24-puzzle.
 		</p>
 	</Panel>
 {/snippet}

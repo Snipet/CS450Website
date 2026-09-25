@@ -394,7 +394,7 @@ export const SYMBOLS: readonly SymbolRow[] = [
 	},
 	{
 		symbol: 'α',
-		meaning: `Weighted A* inflation factor, α > 1: the frontier is ordered by g(n) + α·h(n), and the solution costs at most α·C* (default α = ${DEFAULT_WEIGHT})`,
+		meaning: `Weighted A* inflation factor, α > 1: the frontier is ordered by g(n) + α·h(n); with an admissible h, the solution costs at most α·C* (default α = ${DEFAULT_WEIGHT})`,
 		cite: { deck: 'informed', slide: 38 }
 	},
 	{

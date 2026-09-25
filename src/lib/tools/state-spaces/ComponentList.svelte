@@ -23,13 +23,14 @@ and explained in a note.
 				{COMPONENT_NAMES[c.id]}{#if !c.onSlide}<span class="mark" aria-hidden="true">*</span>{/if}
 			</dt>
 			<dd>
-				{c.text}{#if !c.onSlide}<span class="visually-hidden"> (not on the slide)</span>{/if}
+				{c.text}{#if !c.onSlide}<span class="visually-hidden">&nbsp;(not listed on the slide)</span
+					>{/if}
 			</dd>
 		</div>
 	{/each}
 </dl>
 {#if added}
-	<p class="note"><span aria-hidden="true">*</span> Not on the slide.</p>
+	<p class="note"><span aria-hidden="true">*</span> Not listed on the slide.</p>
 {/if}
 
 <style>

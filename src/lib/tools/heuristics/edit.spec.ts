@@ -22,6 +22,7 @@ import {
 	setStateH,
 	specText,
 	stepFor,
+	stepFrom,
 	withGoal,
 	withHeuristic,
 	withStart,
@@ -162,6 +163,19 @@ describe('labels and steps', () => {
 		expect(stepFor(1.25)).toBe(0.01);
 		expect(stepFor(0.333)).toBe(0.001);
 		expect(stepFor(0.1 + 0.2)).toBe(0.1);
+	});
+
+	it('keeps typed decimals in α and factor fields (a coarse step would round them away)', () => {
+		// α steps by 0.5 while it is a multiple of 0.5; 1.1 must not snap back to 1.
+		expect(stepFrom(2, 0.5)).toBe(0.5);
+		expect(stepFrom(1.5, 0.5)).toBe(0.5);
+		expect(stepFrom(1.1, 0.5)).toBe(0.1);
+		expect(stepFrom(1.25, 0.5)).toBe(0.01);
+		// Factors step by 0.1; 0.25 must not snap to 0.3.
+		expect(stepFrom(2, 0.1)).toBe(0.1);
+		expect(stepFrom(0.7, 0.1)).toBe(0.1);
+		expect(stepFrom(0.25, 0.1)).toBe(0.01);
+		expect(stepFrom(0.125, 0.1)).toBe(0.001);
 	});
 });
 

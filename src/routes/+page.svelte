@@ -29,7 +29,8 @@
 			<header class="section-head">
 				<h2 id="{section.id}-title">{section.title}</h2>
 				<p>
-					{section.blurb}{#if section.chapter}<span class="chapter"> · {section.chapter}</span>{/if}
+					{section.blurb}
+					{#if section.chapter}<span class="chapter">· {section.chapter}</span>{/if}
 				</p>
 			</header>
 			<ul class="cards">

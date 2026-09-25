@@ -7,8 +7,8 @@ against C* and the bound α · C*, and the nodes it expands against A*.
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import NumberField from '$lib/components/ui/NumberField.svelte';
 	import { formatCount } from '$lib/components/search/describe';
-	import { formatValue } from './edit';
-	import type { RunReport } from './analysis';
+	import { formatValue, stepFrom } from './edit';
+	import { weightedBoundNote, type RunReport, type WeightedBound } from './analysis';
 	import { MAX_ALPHA, MIN_ALPHA } from './state';
 
 	interface Props {
@@ -16,11 +16,12 @@ against C* and the bound α · C*, and the nodes it expands against A*.
 		/** Weighted A* and A*, tree and graph search. */
 		runs: { mode: 'tree' | 'graph'; weighted: RunReport; plain: RunReport }[];
 		cStar: number | null;
-		admissible: boolean;
+		/** Which searches slide 38's bound covers with this h (see `weightedBound`). */
+		bound: WeightedBound;
 		onalpha: (alpha: number) => void;
 	}
 
-	let { alpha, runs, cStar, admissible, onalpha }: Props = $props();
+	let { alpha, runs, cStar, bound: covered, onalpha }: Props = $props();
 
 	const EPS = 1e-9;
 	const n = formatValue;
@@ -37,7 +38,7 @@ against C* and the bound α · C*, and the nodes it expands against A*.
 			value={alpha}
 			min={MIN_ALPHA}
 			max={MAX_ALPHA}
-			step={0.5}
+			step={stepFrom(alpha, 0.5)}
 			onchange={onalpha}
 		/>
 		<span class="formula">f(n) = g(n) + {n(alpha)}·h(n)</span>
@@ -88,13 +89,7 @@ against C* and the bound α · C*, and the nodes it expands against A*.
 				{/if}
 			{/each}
 		</p>
-		<p class="note">
-			{#if admissible}
-				h is admissible, so the slide’s bound applies: the solution costs at most α · C*.
-			{:else}
-				h is not admissible, so the slide’s bound does not apply to this h.
-			{/if}
-		</p>
+		<p class="note">{weightedBoundNote(covered)}</p>
 	{:else}
 		<p class="note">No goal state can be reached from the start, so there is no C*.</p>
 	{/if}

@@ -11,6 +11,12 @@
 <svelte:head>
 	<title>{pageTitle(title)}</title>
 	<meta name="robots" content="noindex" />
+	<meta
+		name="description"
+		content={notFound
+			? 'There is no CMSC450 AI Tools page at this address.'
+			: 'This CMSC450 AI Tools page could not be shown.'}
+	/>
 </svelte:head>
 
 <section class="error">

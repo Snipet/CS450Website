@@ -11,7 +11,7 @@ and the nodes A* expands with each.
 	import NumberField from '$lib/components/ui/NumberField.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import { formatCount } from '$lib/components/search/describe';
-	import { formatValue, stepFor } from './edit';
+	import { formatValue, stepFor, stepFrom } from './edit';
 	import {
 		dominanceSentence,
 		type DominanceReport,
@@ -96,7 +96,7 @@ and the nodes A* expands with each.
 						value={second.factor}
 						min={MIN_FACTOR}
 						max={MAX_FACTOR}
-						step={0.1}
+						step={stepFrom(second.factor, 0.1)}
 						{disabled}
 						onchange={(v) => onsecond({ kind: 'scaled', factor: v })}
 					/>
@@ -145,7 +145,9 @@ and the nodes A* expands with each.
 							</td>
 							<td class="num">
 								{#if r.run.cost !== null}
-									<span class={{ bad: r.run.optimal === false }}>{n(r.run.cost)}</span>
+									{#if r.run.optimal === false}<span class="bad"
+											><span class="over">&gt; C*</span> {n(r.run.cost)}</span
+										>{:else}{n(r.run.cost)}{/if}
 								{:else}
 									<span class="muted">–</span>
 								{/if}
@@ -191,7 +193,7 @@ and the nodes A* expands with each.
 						<tr>
 							<th scope="row">{r.id}</th>
 							<td class={['num', 'mono', { larger: r.cmp < 0 }]}>
-								{n(r.h1)}{#if r.cmp < 0}<span class="visually-hidden"> (larger)</span>{/if}
+								{n(r.h1)}{#if r.cmp < 0}<span class="visually-hidden">&nbsp;(larger)</span>{/if}
 							</td>
 							<td class="cmp" aria-hidden="true">{cmpSymbol(r.cmp)}</td>
 							<td class={['num', 'mono', { larger: r.cmp > 0 }]}>
@@ -211,7 +213,7 @@ and the nodes A* expands with each.
 								{:else}
 									{n(r.h2)}
 								{/if}
-								{#if r.cmp > 0}<span class="visually-hidden"> (larger)</span>{/if}
+								{#if r.cmp > 0}<span class="visually-hidden">&nbsp;(larger)</span>{/if}
 							</td>
 							<td class="num mono">{n(r.max)}</td>
 						</tr>
@@ -319,6 +321,11 @@ and the nodes A* expands with each.
 	.bad {
 		color: var(--reject);
 		font-weight: 600;
+		white-space: nowrap;
+	}
+	.over {
+		font-size: var(--text-xs);
+		font-weight: 500;
 	}
 	.muted {
 		color: var(--text-3);

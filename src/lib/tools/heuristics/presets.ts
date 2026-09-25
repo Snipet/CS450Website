@@ -143,6 +143,30 @@ export function presetForSpec(
 	return presetStructures.find((p) => structure(p.spec) === key)?.preset;
 }
 
+/** States (names) and edges of a spec: the graph without positions, start, goals, or h. */
+function graphKey(spec: GraphProblemSpec): string {
+	return JSON.stringify([spec.graph.directed, spec.graph.nodes.map((n) => n.id), spec.graph.edges]);
+}
+
+/**
+ * The preset a problem comes from, for the preset note, "Reset to preset", and
+ * "the preset's heuristic": the saved preset while the graph (states and
+ * edges) is still its graph, whatever the start, goals, and h; otherwise the
+ * preset `presetForSpec` finds.
+ */
+export function basePresetFor(
+	id: string | null,
+	text: string,
+	spec: GraphProblemSpec
+): Preset<HeuristicsScenario> | undefined {
+	const saved = presetById(id);
+	if (saved) {
+		const own = presetStructures.find((p) => p.preset === saved)!.spec;
+		if (graphKey(own) === graphKey(spec)) return saved;
+	}
+	return presetForSpec(text, spec);
+}
+
 /** The heuristic and label of a preset. */
 export function presetHeuristic(p: Preset<HeuristicsScenario>): {
 	h: Readonly<Record<string, number>>;

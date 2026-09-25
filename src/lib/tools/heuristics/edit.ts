@@ -177,3 +177,15 @@ export function stepFor(value: number): number {
 	}
 	return 0.001;
 }
+
+/**
+ * The step of a field that normally steps by `coarse` (α by 0.5, factors by
+ * 0.1): `coarse` while the value is a multiple of it, otherwise the value's
+ * last decimal place, so a typed 1.1 or 0.25 is not rounded to the coarse step
+ * when the field is left.
+ */
+export function stepFrom(value: number, coarse: number): number {
+	const scaled = value / coarse;
+	if (Math.abs(scaled - Math.round(scaled)) < 1e-6) return coarse;
+	return Math.min(coarse, stepFor(value));
+}

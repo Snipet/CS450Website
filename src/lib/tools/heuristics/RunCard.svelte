@@ -9,7 +9,7 @@ search tool.
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import { formatCount } from '$lib/components/search/describe';
 	import { formatValue } from './edit';
-	import type { RunReport } from './analysis';
+	import { stopReason, type RunReport } from './analysis';
 
 	interface Props {
 		title: string;
@@ -47,11 +47,7 @@ search tool.
 			{/if}
 		{:else if run.stopped}
 			<Badge tone="muted">Stopped</Badge>
-			<span class="vs"
-				>at the limit of {formatCount(run.popped)} nodes taken off the frontier or {formatCount(
-					run.generated
-				)} generated</span
-			>
+			<span class="vs">{stopReason(run)}</span>
 		{:else}
 			<Badge tone="reject">No solution</Badge>
 			<span class="vs">the frontier ran empty</span>

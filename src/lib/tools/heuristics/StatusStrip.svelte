@@ -37,15 +37,16 @@ tree and graph search return against C*.
 			ok: v.consistent,
 			value: v.consistent ? 'yes' : `no (${v.violations.length})`
 		},
-		{ key: 'tree', label: 'A* tree', ok: tree.optimal !== false, value: runText(tree) },
-		{ key: 'graph', label: 'A* graph', ok: graph.optimal !== false, value: runText(graph) }
+		// ok: optimal, not optimal, or null without a solution to compare (stopped, none).
+		{ key: 'tree', label: 'A* tree', ok: tree.optimal, value: runText(tree) },
+		{ key: 'graph', label: 'A* graph', ok: graph.optimal, value: runText(graph) }
 	]);
 </script>
 
 <ul class="strip" aria-label="Summary">
 	{#each items as item (item.key)}
-		<li class={['item', item.ok ? 'ok' : 'bad']}>
-			<Icon name={item.ok ? 'check' : 'x'} size={13} />
+		<li class={['item', item.ok === null ? 'none' : item.ok ? 'ok' : 'bad']}>
+			<Icon name={item.ok === null ? 'minus' : item.ok ? 'check' : 'x'} size={13} />
 			<span class="label">{item.label}</span>
 			<span class="value">{item.value}</span>
 		</li>
@@ -74,6 +75,9 @@ tree and graph search return against C*.
 	}
 	.item.ok :global(svg) {
 		color: var(--accept);
+	}
+	.item.none :global(svg) {
+		color: var(--text-3);
 	}
 	.item.bad {
 		border-color: color-mix(in srgb, var(--reject) 45%, var(--border));

@@ -230,6 +230,44 @@ export function runAStar(
 	};
 }
 
+/**
+ * Which weighted A* searches slide 38's bound (cost ≤ α · C*) covers with
+ * this h: both with an admissible and consistent h; tree search only with an
+ * admissible h that is not consistent (graph search can then return more than
+ * α · C*, as A* graph search can return more than C*, slide 29); none when h
+ * is not admissible.
+ */
+export type WeightedBound = 'both' | 'tree' | 'none';
+
+export function weightedBound(v: Pick<Verdicts, 'admissible' | 'consistent'>): WeightedBound {
+	if (!v.admissible) return 'none';
+	return v.consistent ? 'both' : 'tree';
+}
+
+/** The sentence under the weighted A* table. */
+export function weightedBoundNote(bound: WeightedBound): string {
+	switch (bound) {
+		case 'both':
+			return 'h is admissible and consistent, so the slide’s bound applies to both searches: the solution costs at most α · C*.';
+		case 'tree':
+			return 'h is admissible, so the slide’s bound applies to tree search. h is not consistent, so graph search can return more than α · C*, as A* graph search can return more than C* (slide 29).';
+		case 'none':
+			return 'h is not admissible, so the slide’s bound does not apply to this h.';
+	}
+}
+
+/**
+ * Which of RUN_LIMITS stopped a run ("at the limit of 5,000 nodes taken off
+ * the frontier"), or null when the run was not stopped.
+ */
+export function stopReason(run: Pick<RunReport, 'stopped' | 'popped'>): string | null {
+	if (!run.stopped) return null;
+	const count = (n: number) => n.toLocaleString('en-US');
+	return run.popped >= RUN_LIMITS.maxExpansions
+		? `at the limit of ${count(RUN_LIMITS.maxExpansions)} nodes taken off the frontier`
+		: `at the limit of ${count(RUN_LIMITS.maxNodes)} nodes generated`;
+}
+
 /** C* and a cheapest path, or null when no goal can be reached. */
 export function optimalPath(spec: GraphProblemSpec): { cost: number; states: string[] } | null {
 	return shortestPath(spec);

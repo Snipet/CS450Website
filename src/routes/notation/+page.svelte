@@ -1809,6 +1809,9 @@
 		background: var(--surface);
 		font-size: 0.8125rem;
 		line-height: 1.7;
+		/* Long lines (the agent program at 360 px) wrap instead of hiding behind a scrollbar. */
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 	.code .kw {
 		color: var(--syn-keyword);
