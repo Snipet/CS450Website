@@ -9,7 +9,7 @@ import {
 	graphProblem
 } from '../graphs';
 import { createFrontier } from './frontier';
-import { frontierAfter, search } from './search';
+import { frontierAfter, pathTo, search } from './search';
 import type { SearchOptions, SearchResult } from './types';
 
 const tiny = graphProblem(TINY_PROBLEM);
@@ -70,6 +70,25 @@ describe('uninformed search on the tiny search problem (golden)', () => {
 			r.nodes.filter((n) => n.depth <= 2).map((n) => [`${n.label}@${n.depth}`, n.g])
 		);
 		expect(g).toMatchObject({ 'd@1': 3, 'e@1': 9, 'p@1': 1, 'b@2': 4, 'c@2': 11, 'e@2': 5 });
+		// The deeper costs drawn on the tree, by path (labels repeat).
+		const byPath = Object.fromEntries(
+			r.nodes.map((n) => [
+				pathTo(r.nodes, n.id)
+					.map((id) => r.nodes[id].label)
+					.join(''),
+				n.g
+			])
+		);
+		expect(byPath).toMatchObject({
+			Sdba: 6,
+			Sdeh: 13,
+			Sder: 7,
+			Sderf: 8,
+			SderfG: 10,
+			Seh: 17,
+			Ser: 11,
+			Spq: 16
+		});
 	});
 
 	it('frontier snapshots follow each strategy', () => {
@@ -143,12 +162,23 @@ describe('Romania (golden)', () => {
 		const r = run(romania, { strategy: 'greedy' });
 		expect(r.order).toEqual(['Arad', 'Sibiu', 'Fagaras', 'Bucharest']);
 		expect(r.solution?.cost).toBe(450);
-		const sibiuChildren = r.steps[2].children.map((id) => [r.nodes[id].label, r.nodes[id].h]);
-		expect(sibiuChildren).toEqual([
+		const children = (step: number) =>
+			r.steps[step].children.map((id) => [r.nodes[id].label, r.nodes[id].h]);
+		expect(r.nodes[0].h).toBe(366);
+		expect(children(1)).toEqual([
+			['Sibiu', 253],
+			['Timisoara', 329],
+			['Zerind', 374]
+		]);
+		expect(children(2)).toEqual([
 			['Arad', 366],
 			['Fagaras', 176],
 			['Oradea', 380],
 			['Rimnicu Vilcea', 193]
+		]);
+		expect(children(3)).toEqual([
+			['Bucharest', 0],
+			['Sibiu', 253]
 		]);
 	});
 
@@ -162,6 +192,7 @@ describe('Romania (golden)', () => {
 				const n = r.nodes[id];
 				return `${n.label} ${n.priority}=${n.g}+${n.h}`;
 			});
+		expect(`${r.nodes[0].priority}=${r.nodes[0].g}+${r.nodes[0].h}`).toBe('366=0+366');
 		expect(f(1)).toEqual(['Sibiu 393=140+253', 'Timisoara 447=118+329', 'Zerind 449=75+374']);
 		expect(f(2)).toEqual([
 			'Arad 646=280+366',
@@ -245,6 +276,10 @@ describe('A* and heuristic consistency (Informed Search, slides 15, 27–29)', (
 		const r = search(p, { strategy: 'astar' });
 		expect(r.order.join(',')).toBe('S,B,C,A,C,G');
 		expect(r.solution?.cost).toBe(5);
+		// The search tree of slide 27: S (0+2), A (1+4), B (1+1), C (2+1), C (3+1), G (5+0), G (6+0).
+		expect(r.nodes.map((n) => `${n.label} (${n.g}+${n.h})`).sort()).toEqual(
+			['S (0+2)', 'A (1+4)', 'B (1+1)', 'C (3+1)', 'G (6+0)', 'C (2+1)', 'G (5+0)'].sort()
+		);
 	});
 
 	it('graph search with an inconsistent heuristic is not', () => {

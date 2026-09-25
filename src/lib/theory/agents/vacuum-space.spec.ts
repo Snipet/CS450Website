@@ -161,6 +161,41 @@ describe('state-space graph (slide 9)', () => {
 		expect(g.nodes.every((n) => pos.get(n.id)!.x === n.x && pos.get(n.id)!.y === n.y)).toBe(true);
 	});
 
+	it('matches an independent transition model for 2–5 squares', () => {
+		for (let n = MIN_SQUARES; n <= MAX_SQUARES; n++) {
+			const expected: string[] = [];
+			for (const s of vacuumStates(n)) {
+				const loc = s.location;
+				const dirt = s.dirt.map((d) => (d ? 'D' : 'C'));
+				const name = (at: number, d: string[]) => `${'ABCDE'[at]} ${d.join('')}`;
+				expected.push(`${name(loc, dirt)} Left ${name(Math.max(0, loc - 1), dirt)}`);
+				expected.push(`${name(loc, dirt)} Right ${name(Math.min(n - 1, loc + 1), dirt)}`);
+				expected.push(
+					`${name(loc, dirt)} Suck ${name(
+						loc,
+						dirt.map((d, i) => (i === loc ? 'C' : d))
+					)}`
+				);
+			}
+			expect(vacuumTransitions(n).map((t) => `${t.from} ${t.action} ${t.to}`)).toEqual(expected);
+			// Self-loops: Left in the leftmost square, Right in the rightmost, Suck on a clean square.
+			const loops = vacuumStateSpace(n).edges.filter((e) => e.from === e.to).length;
+			expect(loops).toBe(2 ** n + 2 ** n + n * 2 ** (n - 1));
+			expect(vacuumGoals(n)).toHaveLength(n);
+			// Every square dirty, agent at the left end: n Sucks and n − 1 moves Right.
+			const start = `A ${'D'.repeat(n)}`;
+			const bfs = search(vacuumProblem(n, start), { strategy: 'bfs', mode: 'graph' });
+			expect(bfs.solution?.cost).toBe(2 * n - 1);
+			expect(bfs.solution?.actions.filter((a) => a === 'Suck')).toHaveLength(n);
+			// Every state can be reached from there.
+			const all = search(
+				{ ...vacuumProblem(n, start), isGoal: () => false },
+				{ strategy: 'bfs', mode: 'graph', record: 'summary' }
+			);
+			expect(all.stats.explored).toBe(vacuumStateCount(n));
+		}
+	});
+
 	it('gives every state a distinct position for larger worlds', () => {
 		for (let n = 3; n <= MAX_SQUARES; n++) {
 			const pos = [...vacuumPositions(n).values()].map((p) => `${p.x},${p.y}`);

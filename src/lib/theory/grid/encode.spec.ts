@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { hasErrors } from '../diagnostics';
 import { emptyGrid, setWalls } from './edit';
 import { decodeGrid, encodeGrid } from './encode';
-import { GRID_PRESETS, GRID_SIZES, concaveGrid, gridPreset } from './presets';
+import { GRID_PRESETS, GRID_SIZES, concaveGrid, gridPreset, seededRandom } from './presets';
+import type { Grid } from './types';
 
 const messages = (text: string) => decodeGrid(text).diagnostics.map((d) => d.message);
 const errorsOf = (text: string) =>
@@ -124,5 +125,36 @@ describe('decodeGrid', () => {
 			['warning', 'The goal (3, 0) is on a wall; the wall is removed.']
 		]);
 		expect(r.grid?.walls.some(Boolean)).toBe(false);
+	});
+});
+
+describe('random grids', () => {
+	it('round-trip at any size and wall density; damaged text never throws', () => {
+		const random = seededRandom(5);
+		const int = (n: number) => Math.floor(random() * n);
+		for (let k = 0; k < 300; k++) {
+			const width = 1 + int(k < 10 ? 100 : 24);
+			const height = (width === 1 ? 2 : 1) + int(k < 10 ? 99 : 24);
+			const density = random();
+			const walls = Array.from({ length: width * height }, () => random() < density);
+			const start = int(width * height);
+			const goal = (start + 1 + int(width * height - 1)) % (width * height);
+			walls[start] = walls[goal] = false;
+			const grid: Grid = { width, height, walls, start, goal };
+			const text = encodeGrid(grid);
+			expect(text).toMatch(/^[A-Za-z0-9._~-]+$/);
+			expect(decodeGrid(text)).toEqual({ grid, diagnostics: [] });
+			for (let m = 0; m < 5; m++) {
+				const chars = [...text];
+				chars[int(chars.length)] = 'x~.-_0Zs9g'[int(10)];
+				const { grid: back, diagnostics } = decodeGrid(chars.join(''));
+				if (back === null) expect(hasErrors(diagnostics)).toBe(true);
+				else {
+					expect(back.walls).toHaveLength(back.width * back.height);
+					expect(back.start).not.toBe(back.goal);
+					expect(back.walls[back.start] || back.walls[back.goal]).toBe(false);
+				}
+			}
+		}
 	});
 });

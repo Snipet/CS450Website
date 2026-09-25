@@ -57,19 +57,25 @@ export function usesHeuristic(strategy: StrategyId): boolean {
 /** Options with every default filled in. */
 export function normalizeOptions(options: SearchOptions): Required<SearchOptions> {
 	const s = options.strategy;
-	const limit =
-		options.depthLimit ??
-		(s === 'ids' ? DEFAULT_IDS_MAX_LIMIT : s === 'dls' ? DEFAULT_DLS_LIMIT : 0);
+	const limit = numberOr(
+		options.depthLimit,
+		s === 'ids' ? DEFAULT_IDS_MAX_LIMIT : s === 'dls' ? DEFAULT_DLS_LIMIT : 0
+	);
 	return {
 		strategy: s,
 		mode: options.mode ?? 'tree',
 		depthLimit: Math.max(0, Math.floor(limit)),
-		weight: options.weight ?? DEFAULT_WEIGHT,
+		weight: numberOr(options.weight, DEFAULT_WEIGHT),
 		goalTest: options.goalTest ?? 'expand',
-		maxExpansions: Math.max(1, Math.floor(options.maxExpansions ?? DEFAULT_MAX_EXPANSIONS)),
-		maxNodes: Math.max(1, Math.floor(options.maxNodes ?? DEFAULT_MAX_NODES)),
+		maxExpansions: Math.max(1, Math.floor(numberOr(options.maxExpansions, DEFAULT_MAX_EXPANSIONS))),
+		maxNodes: Math.max(1, Math.floor(numberOr(options.maxNodes, DEFAULT_MAX_NODES))),
 		record: options.record ?? 'full'
 	};
+}
+
+/** `value`, or `fallback` when it is missing or NaN (NaN would disable every limit check). */
+function numberOr(value: number | undefined, fallback: number): number {
+	return value === undefined || Number.isNaN(value) ? fallback : value;
 }
 
 /** Priority of a node with path cost g and heuristic h under a strategy (null: no priority). */
@@ -287,7 +293,11 @@ export function search<S>(problem: SearchProblem<S>, options: SearchOptions): Se
 				children.push(child);
 				if (!added) continue;
 				if (replaces !== null) {
-					frontier.remove(replaces);
+					// A sibling generated earlier in this expansion (parallel edges) is
+					// still waiting to be pushed; drop it there instead.
+					const pending = toPush.indexOf(replaces);
+					if (pending >= 0) toPush.splice(pending, 1);
+					else frontier.remove(replaces);
 					nodes[replaces].replacedAt = stepCount;
 				}
 				if (goalTest === 'generate' && problem.isGoal(succ.state)) {
@@ -366,10 +376,14 @@ export function frontierAfter(result: SearchResult, index: number): number[] {
 	const step = result.steps[index];
 	if (step?.frontier) return step.frontier;
 	const iteration = step?.iteration ?? 0;
+	// With the goal test at generation the goal node never enters the frontier
+	// (this matters for a root that is already a goal: its outcome stays null).
+	const neverPushed = result.options.goalTest === 'generate' ? result.solution?.node : undefined;
 	const out: number[] = [];
 	for (const n of result.nodes) {
 		if (n.created > index) break;
 		if (n.iteration !== iteration) continue;
+		if (n.id === neverPushed) continue;
 		if (n.outcome !== null && n.outcome !== 'added' && n.outcome !== 'replaced') continue;
 		if (n.closed !== null && n.closed <= index) continue;
 		if (n.replacedAt !== null && n.replacedAt <= index) continue;

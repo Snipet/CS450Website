@@ -596,6 +596,88 @@ describe('formatGraphText', () => {
 		}
 	});
 
+	it('round-trips random specs with names that look like directives, numbers or operators', () => {
+		const NAMES = [
+			'A',
+			'b',
+			'start',
+			'goal',
+			'h',
+			'at',
+			'node',
+			'directed',
+			'undirected',
+			'5',
+			'1.5',
+			'.5',
+			"'",
+			'St.',
+			'Rimnicu Vilcea',
+			'a"b',
+			'c\\d',
+			'#x',
+			'x-y',
+			'p->q',
+			'k:v',
+			'm,n',
+			'e=f',
+			'→',
+			'Ω',
+			'q10',
+			'q2',
+			'__proto__',
+			'constructor',
+			' pad ',
+			'0',
+			'١٢'
+		];
+		let a = 1;
+		const random = () => {
+			a = (a + 0x6d2b79f5) >>> 0;
+			let t = a;
+			t = Math.imul(t ^ (t >>> 15), t | 1);
+			t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+		const int = (n: number) => Math.floor(random() * n);
+		for (let round = 0; round < 1500; round++) {
+			const pool = [...NAMES].sort(() => random() - 0.5).slice(0, 1 + int(8));
+			const directed = random() < 0.5;
+			const seen = new Set<string>();
+			const edges = [];
+			for (let k = int(10); k > 0; k--) {
+				const from = pool[int(pool.length)];
+				const to = pool[int(pool.length)];
+				const key = directed || from < to ? `${from}\0${to}` : `${to}\0${from}`;
+				if (seen.has(key)) continue; // the text format has no parallel edges
+				seen.add(key);
+				edges.push({ from, to, cost: [0, 1, 2.5, 0.125, 1000, 3.333][int(6)] });
+			}
+			const s: GraphProblemSpec = {
+				graph: {
+					directed,
+					nodes: pool.map((id) =>
+						random() < 0.5 ? { id, x: int(200) - 50 + [0, 0.5, 0.25][int(3)], y: int(200) } : { id }
+					),
+					edges
+				},
+				start: pool[int(pool.length)],
+				goals: pool.filter((_, i) => i === 0 || random() < 0.3)
+			};
+			const h = pool.filter(() => random() < 0.6).map((id) => [id, int(9) + [0, 0.5][int(2)]]);
+			if (h.length) s.h = Object.fromEntries(h);
+			if (random() < 0.3) s.hLabel = ['Straight-line distance', 'h: odd # label'][int(2)];
+			const text = formatGraphText(s, { positions: true });
+			const { spec: back, diagnostics } = parseGraphText(text);
+			expect(
+				diagnostics.filter((d) => d.severity === 'error'),
+				text
+			).toEqual([]);
+			expect(back, text).toStrictEqual(JSON.parse(JSON.stringify(s)));
+			expect(formatGraphText(back!, { positions: true })).toBe(text);
+		}
+	});
+
 	it('is stable on parsed text: formatting a parsed spec again gives the same text', () => {
 		const text = 'A - B 2\nB -> C 1.5\nC - A\nstart: A\ngoal: C\nnode: Z\nh: B=1\nat: A 0 0';
 		const once = formatGraphText(spec(text), { positions: true });

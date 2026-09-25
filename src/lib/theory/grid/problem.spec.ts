@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { search } from '../search/search';
 import type { SearchProblem, StrategyId } from '../search/types';
 import { emptyGrid, setWalls } from './edit';
-import { GRID_PRESETS, GRID_SIZES, concaveGrid, gridPreset } from './presets';
+import { GRID_PRESETS, GRID_SIZES, concaveGrid, gridPreset, seededRandom } from './presets';
 import {
 	DIAGONAL_COST,
 	GRID_HEURISTICS,
@@ -344,6 +344,30 @@ describe('strategies on the presets (graph search)', () => {
 			const r = run(g, s, true, 'euclidean');
 			const closed = r.nodes.filter((n) => n.closed !== null).map((n) => n.key);
 			expect(new Set(closed).size, s).toBe(closed.length);
+		}
+	});
+	it('A* with an admissible heuristic matches uniform-cost search on random grids', () => {
+		const random = seededRandom(99);
+		const int = (n: number) => Math.floor(random() * n);
+		for (let k = 0; k < 150; k++) {
+			const width = 2 + int(14);
+			const height = 1 + int(12);
+			const density = random() * 0.6;
+			const walls = Array.from({ length: width * height }, () => random() < density);
+			const start = int(width * height);
+			const goal = (start + 1 + int(width * height - 1)) % (width * height);
+			walls[start] = walls[goal] = false;
+			const g: Grid = { width, height, walls, start, goal };
+			for (const diagonal of [false, true]) {
+				const best = optimalCost(g, { diagonal });
+				for (const heuristic of GRID_HEURISTICS) {
+					const cost = run(g, 'astar', diagonal, heuristic).solution?.cost ?? null;
+					if (best === null) expect(cost).toBeNull();
+					else if (isAdmissible(heuristic, diagonal)) expect(cost).toBeCloseTo(best, 9);
+					else expect(cost).toBeGreaterThanOrEqual(best - 1e-9);
+				}
+				if (!diagonal) expect(run(g, 'bfs', false, 'zero').solution?.cost ?? null).toBe(best);
+			}
 		}
 	});
 });

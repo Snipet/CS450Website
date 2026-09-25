@@ -14,6 +14,7 @@ export interface Point {
 export const LAYOUT_SPACING = 120;
 
 const ITERATIONS = 400;
+const GRAVITY = 0.3;
 
 /** A position for every node, keyed by name. */
 export function layoutGraph(graph: WeightedGraph): Map<string, Point> {
@@ -85,6 +86,20 @@ export function layoutGraph(graph: WeightedGraph): Map<string, Point> {
 			dy[a] -= (uy / d) * f;
 			dx[b] += (ux / d) * f;
 			dy[b] += (uy / d) * f;
+		}
+		// Weak pull toward the centroid, so parts of a disconnected graph stay near
+		// each other instead of drifting apart.
+		let cx = 0;
+		let cy = 0;
+		for (let i = 0; i < n; i++) {
+			cx += xs[i];
+			cy += ys[i];
+		}
+		cx /= n;
+		cy /= n;
+		for (let i = 0; i < n; i++) {
+			dx[i] -= GRAVITY * (xs[i] - cx);
+			dy[i] -= GRAVITY * (ys[i] - cy);
 		}
 		for (let i = 0; i < n; i++) {
 			if (fixed[i]) continue;

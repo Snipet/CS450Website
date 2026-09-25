@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { search } from '../search/search';
-import { SLIDE_GOAL, SLIDE_START } from './board';
+import { SLIDE_GOAL, SLIDE_START, moves } from './board';
 import {
 	PUZZLE_HEURISTICS,
 	manhattanDistance,
@@ -8,7 +8,7 @@ import {
 	puzzleHeuristic,
 	tileDistances
 } from './heuristics';
-import { PUZZLE_GRAPH_LIMITS, puzzleProblem } from './problem';
+import { PUZZLE_GRAPH_LIMITS, puzzleProblem, seededRandom } from './problem';
 
 /** Optimal solution length h*(n) of every board reachable from the slide goal. */
 function trueDistances(): Map<string, number> {
@@ -103,5 +103,42 @@ describe('over the whole state space', () => {
 
 	it('the slide start is 26 moves from the goal: h1 = 8 and h2 = 18 underestimate it', () => {
 		expect(hStar.get(SLIDE_START)).toBe(26);
+	});
+
+	it('h1, h2 and max(h1, h2) are consistent: h(n) ≤ 1 + h(n′) for every move', () => {
+		const hs = PUZZLE_HEURISTICS.map((h) => puzzleHeuristic(SLIDE_GOAL, h));
+		let pairs = 0;
+		for (const board of hStar.keys()) {
+			const here = hs.map((h) => h(board));
+			for (const m of moves(board)) {
+				pairs++;
+				hs.forEach((h, i) => {
+					if (here[i] > 1 + h(m.board)) throw new Error(`${board} → ${m.board}`);
+				});
+			}
+		}
+		// The blank is in a corner (2 moves), on an edge (3) or in the center (4) equally often.
+		expect(pairs).toBe((181_440 * 24) / 9);
+	});
+
+	it('A* and UCS graph search find the BFS-optimal length on random boards; greedy and weighted A* stay within bounds', () => {
+		const boards = [...hStar.keys()];
+		const random = seededRandom(2024);
+		for (let k = 0; k < 12; k++) {
+			const board = boards[Math.floor(random() * boards.length)];
+			const best = hStar.get(board)!;
+			const run = (strategy: 'astar' | 'ucs' | 'greedy' | 'wastar', h: 'h1' | 'h2' | 'max') =>
+				search(puzzleProblem(board, SLIDE_GOAL, h), {
+					strategy,
+					mode: 'graph',
+					record: 'summary',
+					...PUZZLE_GRAPH_LIMITS
+				}).solution!.depth;
+			for (const h of ['h1', 'h2', 'max'] as const)
+				expect(run('astar', h), `${board} ${h}`).toBe(best);
+			if (best <= 20) expect(run('ucs', 'h2'), board).toBe(best);
+			expect(run('greedy', 'h2'), board).toBeGreaterThanOrEqual(best);
+			expect(run('wastar', 'h2'), board).toBeLessThanOrEqual(2 * best);
+		}
 	});
 });

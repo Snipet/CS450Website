@@ -552,9 +552,9 @@ export interface EvaluationConfig {
 	steps: number;
 	dirtProbability?: number;
 	measure?: MeasureId | PerformanceMeasure;
-	/** First seed; runs use `seed`, `seed + 1`, … (default 0). */
+	/** First seed; runs use `seed`, `seed + 1`, … (default 0; also for a non-finite seed). */
 	seed?: number;
-	/** Seeds per initial state when randomness is involved (default 20). */
+	/** Seeds per initial state when randomness is involved (default 20; also for a non-finite value). */
 	runs?: number;
 }
 
@@ -582,8 +582,11 @@ export function evaluate(
 	config: EvaluationConfig
 ): ProgramEvaluation[] {
 	const p = config.dirtProbability ?? 0;
-	const seed = config.seed ?? 0;
-	const runsIfRandom = Math.max(1, Math.floor(config.runs ?? DEFAULT_EVALUATION_RUNS));
+	const seed = Number.isFinite(config.seed) ? config.seed! : 0;
+	const requested = config.runs ?? DEFAULT_EVALUATION_RUNS;
+	const runsIfRandom = Number.isFinite(requested)
+		? Math.max(1, Math.floor(requested))
+		: DEFAULT_EVALUATION_RUNS;
 	return programs.map((entry) => {
 		const program = resolveProgram(entry, config.table);
 		const runs = p > 0 || program.stochastic ? runsIfRandom : 1;

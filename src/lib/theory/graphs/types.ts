@@ -1,6 +1,6 @@
 /**
  * Explicit weighted graphs: the state spaces drawn on the slides (Romania, the
- * tiny search problem) and ones typed into the tools. See docs/ARCHITECTURE.md §4.3.
+ * tiny search problem) and ones typed into the tools. See docs/ARCHITECTURE.md §4.2.
  */
 
 export interface GraphNode {

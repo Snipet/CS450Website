@@ -85,6 +85,12 @@ describe('formatting', () => {
 		expect(formatLarge(123n)).toBe('123');
 		expect(formatLarge(10n ** 25n)).toBe('1 × 10²⁵');
 		expect(formatLarge(18_446_744_073_709_551_615n)).toBe('1.84 × 10¹⁹');
+		// The mantissa is rounded, not cut off: 2⁶⁵ − 1 = 36,893,488,147,419,103,231.
+		expect(formatLarge(2n ** 65n - 1n)).toBe('3.69 × 10¹⁹');
+		expect(formatLarge(1_995_000_000_000_000n)).toBe('2 × 10¹⁵');
+		expect(formatLarge(9_996_000_000_000_000n)).toBe('1 × 10¹⁶');
+		expect(formatLarge(1_004_999_999_999_999n)).toBe('1 × 10¹⁵');
+		expect(formatLarge(1_234_567n, 3)).toBe('1.23 × 10⁶');
 		expect(superscript(25)).toBe('²⁵');
 	});
 });

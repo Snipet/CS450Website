@@ -611,6 +611,14 @@ describe('evaluate', () => {
 		expect(evaluate(['reflex'], { steps: 6, dirtProbability: 0.2, seed: 1 })).toEqual(ev);
 	});
 
+	it('falls back to the default runs and seed 0 for NaN (never a NaN average)', () => {
+		const ev = evaluate(['random'], { steps: 4, runs: Number.NaN, seed: Number.NaN });
+		expect(ev[0].runs).toBe(DEFAULT_EVALUATION_RUNS);
+		expect(Number.isFinite(ev[0].average)).toBe(true);
+		expect(ev).toEqual(evaluate(['random'], { steps: 4, seed: 0 }));
+		expect(evaluate(['random'], { steps: 4, runs: 0.5 })[0].runs).toBe(1);
+	});
+
 	it('uses the given table for the table-driven program', () => {
 		const lazy = tableFromActions(['NoOp', 'NoOp', 'NoOp', 'NoOp']);
 		const [e] = evaluate(['table'], { steps: 3, table: lazy });

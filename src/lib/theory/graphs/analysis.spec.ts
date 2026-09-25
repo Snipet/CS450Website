@@ -16,6 +16,7 @@ import {
 	SLD_FAGARAS,
 	TINY_PROBLEM
 } from './builtins';
+import { compareNames } from './names';
 import type { GraphProblemSpec } from './types';
 
 /** A small spec from [from, to, cost] triples; nodes in order of appearance. */
@@ -354,5 +355,125 @@ describe('maxHeuristic', () => {
 		expect(Object.getOwnPropertyDescriptor(h, '__proto__')!.value).toBe(7);
 		expect(h.constructor).toBe(2);
 		expect(Object.getPrototypeOf(h)).toBe(Object.prototype);
+	});
+});
+
+describe('against brute force on random small graphs', () => {
+	/** mulberry32 */
+	function rng(seed: number) {
+		let a = seed >>> 0;
+		return () => {
+			a = (a + 0x6d2b79f5) >>> 0;
+			let t = a;
+			t = Math.imul(t ^ (t >>> 15), t | 1);
+			t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+	}
+
+	/** Up to 6 states, parallel edges, self-loops, zero-cost edges (and zero-cost cycles). */
+	function randomSpec(seed: number): GraphProblemSpec {
+		const r = rng(seed);
+		const int = (n: number) => Math.floor(r() * n);
+		const ids = ['S', 'X', 'A', 'Z', 'b', 'C'].slice(0, 1 + int(6));
+		const edges = Array.from({ length: int(14) }, () => ({
+			from: ids[int(ids.length)],
+			to: ids[int(ids.length)],
+			cost: [0, 0, 1, 1, 2, 3][int(6)]
+		}));
+		return {
+			graph: { directed: r() < 0.6, nodes: ids.map((id) => ({ id })), edges },
+			start: ids[int(ids.length)],
+			goals: ids.filter(() => r() < 0.3),
+			h: Object.fromEntries(ids.map((id) => [id, int(5)]))
+		};
+	}
+
+	const outOf = (s: GraphProblemSpec, id: string) =>
+		s.graph.edges.flatMap((e) => {
+			const out: [string, number][] = [];
+			if (e.from === id) out.push([e.to, e.cost]);
+			if (!s.graph.directed && e.to === id && e.from !== id) out.push([e.from, e.cost]);
+			return out;
+		});
+
+	/** Cheapest simple path by enumeration; ties to the first in name order (a prefix first). */
+	function bruteShortest(s: GraphProblemSpec, start = s.start) {
+		let best: { cost: number; states: string[] } | null = null;
+		const before = (a: string[], b: string[]) => {
+			for (let i = 0; i < Math.min(a.length, b.length); i++) {
+				const c = compareNames(a[i], b[i]);
+				if (c) return c < 0;
+			}
+			return a.length < b.length;
+		};
+		const walk = (path: string[], cost: number) => {
+			const at = path[path.length - 1];
+			if (s.goals.includes(at)) {
+				if (!best || cost < best.cost || (cost === best.cost && before(path, best.states)))
+					best = { cost, states: [...path] };
+				return;
+			}
+			for (const [to, c] of outOf(s, at)) if (!path.includes(to)) walk([...path, to], cost + c);
+		};
+		walk([start], 0);
+		return best as { cost: number; states: string[] } | null;
+	}
+
+	it('shortestPath is the cheapest path, first in name order among ties', () => {
+		for (let seed = 1; seed <= 2500; seed++) {
+			const s = randomSpec(seed);
+			expect(shortestPath(s), `seed ${seed}`).toEqual(bruteShortest(s));
+		}
+	});
+
+	it('breaks ties in name order across zero-cost edges', () => {
+		// S → X costs 1, and so does S → A → Z → X; A comes before X.
+		const s = make(
+			[
+				['S', 'X', 1],
+				['S', 'A', 0],
+				['A', 'Z', 1],
+				['Z', 'X', 0]
+			],
+			'S',
+			['X']
+		);
+		expect(shortestPath(s)).toEqual({ cost: 1, states: ['S', 'A', 'Z', 'X'] });
+		// A zero-cost cycle A ⇄ B in front of the goal: the path stays simple.
+		const loop = make(
+			[
+				['S', 'A', 0],
+				['A', 'B', 0],
+				['B', 'A', 0],
+				['B', 'G', 2],
+				['S', 'G', 2]
+			],
+			'S',
+			['G']
+		);
+		expect(shortestPath(loop)).toEqual({ cost: 2, states: ['S', 'A', 'B', 'G'] });
+	});
+
+	it('trueCosts, checkHeuristic and compareHeuristics follow their definitions', () => {
+		for (let seed = 1; seed <= 1500; seed++) {
+			const s = randomSpec(seed);
+			const ids = s.graph.nodes.map((n) => n.id);
+			const star = trueCosts(s);
+			for (const id of ids)
+				expect(star.get(id), `seed ${seed} h*(${id})`).toBe(bruteShortest(s, id)?.cost ?? Infinity);
+			const h = s.h!;
+			const report = checkHeuristic(s);
+			expect(report.admissible).toBe(ids.every((id) => h[id] <= star.get(id)!));
+			const consistent = ids.every((id) => outOf(s, id).every(([to, c]) => h[id] <= c + h[to]));
+			expect(report.consistent, `seed ${seed}`).toBe(consistent);
+			expect(report.goalsZero).toBe(s.goals.every((g) => h[g] === 0));
+			// Consistency implies admissibility when goals have h = 0 (Informed Search, slide 29).
+			if (report.consistent && report.goalsZero) expect(report.admissible).toBe(true);
+			const other = randomSpec(seed + 7919).h!;
+			const cmp = compareHeuristics(s, h, other);
+			expect(cmp.dominates).toBe(ids.every((id) => (other[id] ?? 0) >= h[id]));
+			expect(cmp.equal).toBe(ids.every((id) => (other[id] ?? 0) === h[id]));
+		}
 	});
 });

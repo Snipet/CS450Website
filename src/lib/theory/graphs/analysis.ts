@@ -110,62 +110,89 @@ export function trueCosts(spec: GraphProblemSpec): Map<string, number> {
 	return dist;
 }
 
-/** Lexicographic order of paths by name order; a prefix comes first. */
-function comparePaths(a: readonly string[], b: readonly string[]): number {
-	for (let i = 0; i < Math.min(a.length, b.length); i++) {
-		const c = compareNames(a[i], b[i]);
-		if (c) return c;
-	}
-	return a.length - b.length;
-}
+/** Whether two sums of costs are equal up to rounding. */
+const sameCost = (a: number, b: number) =>
+	Math.abs(a - b) <= EPS * Math.max(1, Math.abs(a), Math.abs(b));
 
 /**
  * A cheapest path from the start to the nearest goal, or null when no goal
  * is reachable (or the start is not a node). Among paths of equal cost the
- * one whose state names come first in name order wins (compared from the
- * start).
+ * one whose state names come first in name order wins, compared from the
+ * start (a path never continues past a goal, since its prefix would come
+ * first). This holds with zero-cost edges too.
+ *
+ * Every cheapest path uses only "tight" edges (n → n' with g(n) + c = g(n'),
+ * g the distance from the start), and every path of tight edges from the
+ * start to a goal at distance C* is a cheapest one. So the path is built one
+ * state at a time: the first successor in name order, over a tight edge, that
+ * can still reach such a goal by tight edges without revisiting the path.
  */
 export function shortestPath(spec: GraphProblemSpec): { cost: number; states: string[] } | null {
 	const next = arcs(spec.graph, false);
 	if (!next.has(spec.start)) return null;
-	const goals = new Set(spec.goals);
+
+	// Dijkstra from the start.
 	const dist = new Map<string, number>([[spec.start, 0]]);
-	const parent = new Map<string, string | null>([[spec.start, null]]);
-	const done = new Set<string>();
-	const pathOf = (id: string): string[] => {
-		const path: string[] = [];
-		for (let at: string | null = id; at !== null; at = parent.get(at) ?? null) path.push(at);
-		return path.reverse();
-	};
 	const heap = new Heap();
 	heap.push(0, spec.start);
-	let best: { cost: number; states: string[] } | null = null;
+	const done = new Set<string>();
 	while (heap.size) {
 		const [d, u] = heap.pop();
-		if (done.has(u) || d > dist.get(u)!) continue;
-		if (best && d > best.cost + EPS) break;
+		if (done.has(u)) continue;
 		done.add(u);
-		if (goals.has(u)) {
-			const states = pathOf(u);
-			if (!best || comparePaths(states, best.states) < 0) best = { cost: d, states };
-			continue;
-		}
-		const via = pathOf(u);
 		for (const { to, cost } of next.get(u)!) {
-			if (done.has(to)) continue;
 			const nd = d + cost;
-			const old = dist.get(to) ?? Infinity;
-			if (nd < old - EPS) {
+			if (nd < (dist.get(to) ?? Infinity)) {
 				dist.set(to, nd);
-				parent.set(to, u);
 				heap.push(nd, to);
-			} else if (Math.abs(nd - old) <= EPS) {
-				const current = pathOf(parent.get(to)!);
-				if (comparePaths([...via, to], [...current, to]) < 0) parent.set(to, u);
 			}
 		}
 	}
-	return best;
+
+	let best = Infinity;
+	for (const g of spec.goals) best = Math.min(best, dist.get(g) ?? Infinity);
+	if (!Number.isFinite(best)) return null;
+	const targets = new Set(spec.goals.filter((g) => dist.has(g) && sameCost(dist.get(g)!, best)));
+	const tight = (u: string, v: string, cost: number) =>
+		dist.has(u) && dist.has(v) && sameCost(dist.get(u)! + cost, dist.get(v)!);
+
+	// States that reach a target by tight edges without entering `avoid`.
+	const back = arcs(spec.graph, true);
+	const reaching = (avoid: ReadonlySet<string>): Set<string> => {
+		const seen = new Set<string>();
+		const queue: string[] = [];
+		for (const t of targets) {
+			if (avoid.has(t)) continue;
+			seen.add(t);
+			queue.push(t);
+		}
+		for (let k = 0; k < queue.length; k++) {
+			const v = queue[k];
+			for (const { to: u, cost } of back.get(v)!) {
+				if (seen.has(u) || avoid.has(u) || !tight(u, v, cost)) continue;
+				seen.add(u);
+				queue.push(u);
+			}
+		}
+		return seen;
+	};
+
+	const states = [spec.start];
+	const onPath = new Set(states);
+	let at = spec.start;
+	while (!targets.has(at)) {
+		const ok = reaching(onPath);
+		let pick: string | null = null;
+		for (const { to, cost } of next.get(at)!) {
+			if (onPath.has(to) || !ok.has(to) || !tight(at, to, cost)) continue;
+			if (pick === null || compareNames(to, pick) < 0) pick = to;
+		}
+		if (pick === null) return null; // not reached: some successor always continues the path
+		states.push(pick);
+		onPath.add(pick);
+		at = pick;
+	}
+	return { cost: dist.get(at)!, states };
 }
 
 export interface HeuristicReport {

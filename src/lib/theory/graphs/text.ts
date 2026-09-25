@@ -15,7 +15,7 @@
  * node: Lonely               # a state with no edges (a list declares several)
  * ```
  *
- * Details beyond the table in §4.2.1:
+ * Details (also in §4.2.1):
  * - Names are words of letters, digits, `_`, `'` and `.` (any script), or
  *   double-quoted strings where `\"` and `\\` are escapes.
  * - Edge operators: `-`, `--`, `->`, `→`, or none; a cost may follow a colon

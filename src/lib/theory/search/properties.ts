@@ -113,6 +113,7 @@ export const STRATEGY_PROPERTIES: readonly StrategyProperties[] = [
 		],
 		cite: [
 			{ deck: 'informed', slide: 29 },
+			{ deck: 'informed', slide: 30 },
 			{ deck: 'informed', slide: 31 },
 			{ deck: 'informed', slide: 42 }
 		]
@@ -194,12 +195,22 @@ export function formatCount(n: bigint | number): string {
 	return neg ? `-${grouped}` : grouped;
 }
 
-/** A large count in scientific form when it has more than `maxDigits` digits: "1.2 × 10²⁵". */
+/**
+ * A large count in scientific form when it has more than `maxDigits` digits:
+ * "1.2 × 10²⁵", the mantissa rounded to three significant digits.
+ */
 export function formatLarge(n: bigint, maxDigits = 15): string {
 	const s = n.toString();
-	if (s.length <= maxDigits) return formatCount(n);
-	const exp = s.length - 1;
-	const mantissa = `${s[0]}.${s.slice(1, 3)}`.replace(/\.?0+$/, '');
+	if (s.length <= maxDigits || n < 0n) return formatCount(n);
+	let exp = s.length - 1;
+	// Three significant digits, rounded half up (999.5 → 1000 carries into the exponent).
+	let head = Number(s.slice(0, 3)) + (Number(s[3] ?? '0') >= 5 ? 1 : 0);
+	if (head === 1000) {
+		head = 100;
+		exp++;
+	}
+	const digits = String(head);
+	const mantissa = `${digits[0]}.${digits.slice(1)}`.replace(/\.?0+$/, '');
 	return `${mantissa} × 10${superscript(exp)}`;
 }
 

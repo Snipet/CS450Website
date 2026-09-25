@@ -1,5 +1,5 @@
 /**
- * Search engine contracts. See docs/ARCHITECTURE.md §4.2.
+ * Search engine contracts. See docs/ARCHITECTURE.md §4.1.
  *
  * A problem is given the way the lectures define one (Solving Problems by
  * Searching, slide 5): an initial state, a successor function that lists the
@@ -194,7 +194,10 @@ export interface SearchStats {
 	generated: number;
 	/** Largest frontier size reached. */
 	maxFrontier: number;
-	/** Explored-set size at the end (graph mode). */
+	/**
+	 * Largest explored set (graph mode; 0 otherwise). This is its size at the end,
+	 * except for IDS, which starts each iteration with an empty explored set.
+	 */
 	explored: number;
 }
 

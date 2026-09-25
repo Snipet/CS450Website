@@ -175,7 +175,7 @@ const DIMENSION_TABLE: DimensionTable = {
 				label: 'Dynamic',
 				name: 'Dynamic',
 				definition: 'The world changes while the agent is thinking.',
-				pictured: 'a cartoon cat chasing a mouse'
+				pictured: 'a cartoon cat watching a mouse carry cheese'
 			},
 			{
 				id: 'semidynamic',
@@ -212,7 +212,7 @@ const DIMENSION_TABLE: DimensionTable = {
 				name: 'Continuous',
 				definition:
 					'The state variables (and possibly time) take continuous values, so there is no fixed number of distinct states.',
-				pictured: 'a robot arm moving pieces on a real chessboard'
+				pictured: 'a robot arm beside a real chessboard'
 			}
 		],
 		cite: { deck: 'agents', slide: 14 }
@@ -265,7 +265,7 @@ const DIMENSION_TABLE: DimensionTable = {
 				name: 'Unknown',
 				definition:
 					'The agent does not know the rules of the environment (transition model and rewards) in advance.',
-				pictured: 'an unfamiliar game world'
+				pictured: 'a room in a 3D adventure game'
 			}
 		],
 		cite: { deck: 'agents', slide: 16 }
