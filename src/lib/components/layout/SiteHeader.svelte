@@ -135,7 +135,8 @@
 			font-size: var(--text-base);
 		}
 		nav a {
-			padding: 6px 6px;
+			padding: 6px 5px;
+			font-size: var(--text-xs);
 		}
 	}
 	@media (max-width: 340px) {
