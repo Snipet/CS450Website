@@ -4,9 +4,12 @@
  * on a specific example: "Open in the search tool", "Check this heuristic",
  * and so on.
  */
+import type { GridHeuristic } from '$lib/theory/grid';
 import type { RepeatMode, StrategyId } from '$lib/theory/search';
 import { encode } from '$lib/url-state';
 import { toolHref } from '$lib/site';
+import type { ApproachId } from './approaches/content';
+import type { GridAlgorithm } from './grid/state';
 import { toolBySlug } from './registry';
 
 export interface LinkStates {
@@ -18,9 +21,23 @@ export interface LinkStates {
 	/** Boards as nine digits, row by row, 0 for the blank ("724506831"). */
 	'eight-puzzle': { start: string; goal?: string };
 	/** `grid` uses the grid text encoding (encodeGrid). */
-	grid: { grid: string };
+	grid: {
+		grid: string;
+		algorithm?: GridAlgorithm;
+		compare?: GridAlgorithm | null;
+		diagonal?: boolean;
+		heuristic?: GridHeuristic;
+		weight?: number;
+	};
 	environments: { preset?: string };
-	vacuum: { program?: string };
+	vacuum: {
+		program?: 'reflex' | 'reflex-state' | 'random' | 'table';
+		/** A vacuum state name such as "A DD" (agent in A, both squares dirty). */
+		initial?: string;
+		measure?: 'clean-squares' | 'clean-minus-moves';
+	};
+	approaches: { approach?: ApproachId };
+	history: { era?: string | null };
 }
 
 export type LinkSlug = keyof LinkStates;

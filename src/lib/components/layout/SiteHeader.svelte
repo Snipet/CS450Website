@@ -120,5 +120,33 @@
 		.inner {
 			gap: var(--space-3);
 		}
+		nav {
+			gap: 0;
+		}
+		nav a {
+			padding: 6px 8px;
+		}
+	}
+	@media (max-width: 400px) {
+		.inner {
+			gap: var(--space-2);
+		}
+		.name {
+			font-size: var(--text-base);
+		}
+		nav a {
+			padding: 6px 6px;
+		}
+	}
+	@media (max-width: 340px) {
+		/* Keep the name for screen readers; show only the mark. */
+		.name {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+		}
 	}
 </style>

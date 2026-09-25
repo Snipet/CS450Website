@@ -22,7 +22,7 @@ export const topics: { id: Topic; title: string; blurb: string; chapter?: string
 	{
 		id: 'intro',
 		title: 'Introduction',
-		blurb: 'Definitions of AI and the Turing test',
+		blurb: 'Definitions of AI, the Turing test, and AI history',
 		chapter: 'Chapter 1'
 	},
 	{
