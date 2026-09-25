@@ -23,6 +23,8 @@ export interface LinkStates {
 		/** DLS limit, or the largest IDS limit. */
 		depthLimit?: number;
 		goalTest?: 'expand' | 'generate';
+		/** Nodes taken off the frontier before the run stops. */
+		maxExpansions?: number;
 	};
 	heuristics: { graph: string };
 	strategies: { graph?: string; mode?: RepeatMode };

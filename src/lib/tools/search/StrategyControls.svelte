@@ -274,8 +274,9 @@ Changes are reported as patches through `onchange`.
 		.mode {
 			grid-template-columns: auto minmax(0, 1fr);
 		}
+		/* The whole row, so the slide number is not cut off on narrow screens. */
 		.mode-cite {
-			grid-column: 2;
+			grid-column: 1 / -1;
 		}
 	}
 </style>

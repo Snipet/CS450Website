@@ -3,9 +3,12 @@
 An expansion order written like the slides, "(S, d, e, p, …)", with the
 states taken off the frontier so far emphasized and the one of the current
 step marked. Long orders scroll inside the box and keep the current state in
-view.
+view. The order is drawn as three runs of text (before, at, and after the
+step), so stepping stays fast for orders of thousands of states.
 -->
 <script lang="ts">
+	import { orderRuns, unbreakableNames } from './view';
+
 	interface Props {
 		order: readonly string[];
 		/** How many entries have been taken off the frontier. */
@@ -23,6 +26,12 @@ view.
 	let { order, taken, current, label, maxHeight = 0, compact = false }: Props = $props();
 
 	let box = $state<HTMLElement>();
+	/** The end of the states taken off before this step. */
+	let mark = $state<HTMLElement>();
+	let currentEl = $state<HTMLElement>();
+
+	const names = $derived(unbreakableNames(order));
+	const runs = $derived(orderRuns(names, taken, current));
 
 	const spoken = $derived(
 		taken === 0
@@ -32,16 +41,16 @@ view.
 				}.`
 	);
 
-	// Keep the current entry visible inside the box (never scrolls the page).
+	// Keep the current entry (or the end of the ones taken off) visible inside
+	// the box; never scrolls the page.
 	$effect(() => {
 		const el = box;
-		const at = current ?? (taken > 0 ? taken - 1 : null);
-		if (!el || !maxHeight || at === null || el.scrollHeight <= el.clientHeight) return;
-		const item = el.querySelector<HTMLElement>(`[data-i="${at}"]`);
-		if (!item) return;
+		void runs;
+		const item = currentEl ?? (taken > 0 ? mark : undefined);
+		if (!el || !maxHeight || !item || el.scrollHeight <= el.clientHeight) return;
 		// The box is positioned, so offsets are relative to it.
 		const top = item.offsetTop;
-		const bottom = top + item.offsetHeight;
+		const bottom = top + Math.max(item.offsetHeight, 16);
 		if (top < el.scrollTop + 4) el.scrollTop = Math.max(0, top - 8);
 		else if (bottom > el.scrollTop + el.clientHeight - 4)
 			el.scrollTop = bottom - el.clientHeight + 8;
@@ -55,10 +64,12 @@ view.
 >
 	<span class="visually-hidden">{spoken}</span>
 	<p class="text" aria-hidden="true">
-		<span class="paren">(</span>{#each order as name, i (i)}<span
-				data-i={i}
-				class={['item', i < taken ? 'done' : 'todo', { current: i === current }]}>{name}</span
-			>{#if i < order.length - 1}<span class="sep">,</span>{/if}{/each}<span class="paren">)</span>
+		<span class="paren">(</span>{#if runs.done}<span class="done">{runs.done}</span>{/if}<span
+			class="mark"
+			bind:this={mark}
+		></span>{#if runs.current !== null}<span class="current" bind:this={currentEl}
+				>{runs.current}</span
+			>{/if}{#if runs.todo}<span class="todo">{runs.todo}</span>{/if}<span class="paren">)</span>
 	</p>
 </div>
 
@@ -82,17 +93,8 @@ view.
 	.compact .text {
 		line-height: 1.7;
 	}
-	.paren,
-	.sep {
+	.paren {
 		color: var(--text-3);
-	}
-	.sep {
-		margin-right: 0.55em;
-	}
-	.item {
-		padding: 1px 1px;
-		border-radius: var(--radius-sm);
-		white-space: nowrap;
 	}
 	.done {
 		color: var(--text);
@@ -103,7 +105,11 @@ view.
 	}
 	.current {
 		padding: 1px 4px;
+		border-radius: var(--radius-sm);
 		background: var(--active-soft);
 		box-shadow: inset 0 0 0 1px var(--active);
+		color: var(--text);
+		font-weight: 600;
+		white-space: nowrap;
 	}
 </style>

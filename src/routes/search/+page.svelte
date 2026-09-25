@@ -40,6 +40,7 @@
 	import { SEARCH_PRESETS, matchPreset } from '$lib/tools/search/presets';
 	import {
 		ANNOTATIONS,
+		cleanSettings,
 		completeSearchState,
 		defaultSearchState,
 		isSavedSearchState,
@@ -121,7 +122,7 @@
 	/** Applies a settings change; a run shown at its last step stays at its last step. */
 	function change(patch: Partial<SearchSettings>) {
 		const atEnd = stepper.total > 1 && stepper.atEnd;
-		Object.assign(settings, patch);
+		Object.assign(settings, cleanSettings(patch));
 		if (atEnd) stepper.last();
 	}
 
@@ -159,7 +160,9 @@
 	];
 
 	const heuristicLink = $derived(spec.h ? toolLink('heuristics', { graph: validText }) : null);
-	const strategiesLink = $derived(toolLink('strategies', { graph: validText }));
+	const strategiesLink = $derived(
+		toolLink('strategies', { graph: validText, mode: settings.mode })
+	);
 
 	// ------------------------------------------------------------------
 	// Compact step bar on narrow screens while the step controls are out of view
@@ -199,6 +202,8 @@
 			facts.goals.length === 1 ? 'goal' : 'goals'
 		} ${facts.goals.join(', ')}.${highlight.current ? ` Being expanded: ${highlight.current}.` : ''}${
 			highlight.frontier.length ? ` On the frontier: ${highlight.frontier.join(', ')}.` : ''
+		}${highlight.cutoff.length ? ` Cut off at the depth limit: ${highlight.cutoff.join(', ')}.` : ''}${
+			highlight.dropped.length ? ` Not added: ${highlight.dropped.join(', ')}.` : ''
 		}${highlight.path.length ? ` Solution path: ${highlight.path.join(' → ')}.` : ''}`
 	);
 </script>
@@ -362,7 +367,7 @@
 				<div class="question">
 					<p class="q">Properties of depth-first search: complete?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 32 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							No: it fails in infinite-depth spaces and in spaces with loops. Depth-first tree
 							search from Arad goes Arad, Sibiu, Arad, Sibiu, … until the expansion limit stops it.
@@ -378,7 +383,7 @@
 				<div class="question">
 					<p class="q">How can we fix the greedy problem?</p>
 					<CitationTag cite={{ deck: 'informed', slide: 15 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Keep track of the distance already traveled, g(n), in addition to the estimated
 							distance remaining, h(n): A* orders the frontier by f(n) = g(n) + h(n)
@@ -394,7 +399,7 @@
 				<div class="question">
 					<p class="q">A* gone wrong?</p>
 					<CitationTag cite={{ deck: 'informed', slide: 27 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Graph search never adds an explored state again, so the first path to a state that is
 							expanded must be the cheapest one. An admissible heuristic that is not consistent can

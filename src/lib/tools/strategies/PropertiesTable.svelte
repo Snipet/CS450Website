@@ -11,7 +11,7 @@
 	import CitationTag from '$lib/components/ui/CitationTag.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import { STRATEGY_PROPERTIES, type StrategyProperties } from '$lib/theory/search';
-	import { complexityLines } from './properties-view';
+	import { complexityLines, mergesTimeAndSpace } from './properties-view';
 
 	const uid = $props.id();
 	const open = new SvelteSet<string>();
@@ -67,7 +67,7 @@
 					</th>
 					<td data-label="Complete?">{p.complete}</td>
 					<td data-label="Optimal?">{p.optimal}</td>
-					{#if p.time === p.space}
+					{#if mergesTimeAndSpace(p)}
 						<td colspan="2" class="merged" data-label="Time and space">
 							<span class="lines"
 								>{#each complexityLines(p.time) as line (line)}<span class="line">{line}</span

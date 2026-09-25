@@ -11,6 +11,7 @@ import {
 	DEFAULT_MAX_EXPANSIONS,
 	MAX_MAX_EXPANSIONS,
 	STRATEGIES,
+	cleanSettings,
 	completeSearchState,
 	defaultSearchState,
 	defaultShape,
@@ -119,5 +120,26 @@ describe('search tool state', () => {
 		expect(graph).toBeTypeOf('string');
 		expect(step).toBe(0);
 		expect(settingsOf(defaultSearchState())).toEqual(rest);
+	});
+
+	it('cleanSettings keeps the numbers a number field reports valid for the run and the link', () => {
+		// A number field reports 2.5 while "2.5" is typed into an integer field.
+		const patch = cleanSettings({ depthLimit: 2.5, maxExpansions: 30.2, weight: 1.3 });
+		expect(patch).toEqual({ depthLimit: 3, maxExpansions: 30, weight: 1.3 });
+		const saved = { graph: tinyText, ...settingsOf(defaultSearchState()), ...patch, step: 0 };
+		expect(isSavedSearchState(saved)).toBe(true);
+		expect(cleanSettings({ depthLimit: -4, maxExpansions: 1e9, weight: 99 })).toEqual({
+			depthLimit: 0,
+			maxExpansions: MAX_MAX_EXPANSIONS,
+			weight: 10
+		});
+		expect(cleanSettings({ depthLimit: NaN, maxExpansions: NaN, weight: NaN })).toEqual({
+			depthLimit: 0,
+			maxExpansions: 1,
+			weight: 2
+		});
+		expect(cleanSettings({ strategy: 'bfs' })).toEqual({ strategy: 'bfs' });
+		// Without cleaning, such a state is rejected when the link is opened.
+		expect(isSavedSearchState({ graph: tinyText, depthLimit: 2.5 })).toBe(false);
 	});
 });

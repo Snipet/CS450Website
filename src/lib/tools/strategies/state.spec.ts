@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { LinkStates } from '$lib/tools/links';
 import { problemText } from './problems';
+import { hanoiFacts, nodeCounts } from './counts';
 import {
+	MAX_B,
+	MAX_DISKS,
 	MAX_GRAPH_TEXT,
+	cleanCounts,
+	cleanDisks,
 	completeStrategiesState,
 	defaultStrategiesState,
 	isSavedStrategiesState,
@@ -102,5 +107,34 @@ describe('savedStateOf', () => {
 		expect(withGraph.graph).toBe('start: S');
 		expect('preset' in withGraph).toBe(false);
 		expect(completeStrategiesState(saved)).toEqual(d);
+	});
+});
+
+describe('cleanCounts and cleanDisks', () => {
+	it('turn values typed into the number fields into valid count inputs', () => {
+		// A number field reports 2.5 while "2.5" is typed; the counts throw on it.
+		const raw = { b: 2.5, d: 3.4, m: -1, cStar: 10, eps: 1 };
+		expect(() => nodeCounts(raw)).toThrow(RangeError);
+		const clean = cleanCounts(raw);
+		expect(clean).toEqual({ b: 3, d: 3, m: 0, cStar: 10, eps: 1 });
+		expect(nodeCounts(clean).bfs.total).toBe(40n);
+		expect(isSavedStrategiesState({ ...defaultStrategiesState(), ...clean })).toBe(true);
+		expect(cleanCounts({ b: NaN, d: Infinity, m: 5, cStar: NaN, eps: 0 })).toEqual({
+			b: 1,
+			d: 1000,
+			m: 5,
+			cStar: 0,
+			eps: 0.1
+		});
+		expect(cleanCounts({ b: 1e9, d: 0, m: 0, cStar: 1e9, eps: 1e9 }).b).toBe(MAX_B);
+	});
+
+	it('cleanDisks keeps the Hanoi note from throwing', () => {
+		expect(() => hanoiFacts(3.5)).toThrow(RangeError);
+		expect(cleanDisks(3.5)).toBe(4);
+		expect(hanoiFacts(cleanDisks(3.5)).moves).toBe(15n);
+		expect(cleanDisks(0)).toBe(1);
+		expect(cleanDisks(NaN)).toBe(1);
+		expect(cleanDisks(1000)).toBe(MAX_DISKS);
 	});
 });

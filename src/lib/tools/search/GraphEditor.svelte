@@ -26,12 +26,14 @@ diagnostics, a short format reference, and how states are drawn.
 	];
 
 	const FORMAT: [string, string][] = [
+		['directed', 'or undirected (the default unless an edge uses ->)'],
 		['start: Arad', 'the start state'],
 		['goal: Bucharest', 'goal states (several: goal: G1, G2)'],
 		['Arad - Sibiu 140', 'an undirected edge with its step cost'],
 		['S -> d 3', 'a directed edge (the graph becomes directed)'],
 		['h: Arad=366, Sibiu=253', 'heuristic values (h = 0 when left out)'],
 		['at: Arad 26 233', 'where to draw a state (optional)'],
+		['node: Lonely', 'a state with no edges (a list declares several)'],
 		['# h: Straight-line distance', 'on the first line: what h is'],
 		['"Rimnicu Vilcea"', 'quotes for names with spaces']
 	];

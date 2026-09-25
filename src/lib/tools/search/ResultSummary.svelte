@@ -63,9 +63,10 @@ whether the solution is a cheapest path.
 		<span>{opt.text}</span>
 		{#if weighted && opt.best && result.solution}
 			<span class="aside">
-				With an admissible h, weighted A* returns a path that costs at most α · C* = {formatNumber(
-					alpha
-				)} × {formatNumber(opt.best.cost)} = {formatNumber(alpha * opt.best.cost)}.
+				With an admissible h{result.mode === 'graph' ? ' that is also consistent' : ''}, weighted A*
+				returns a path that costs at most α · C* = {formatNumber(alpha)} × {formatNumber(
+					opt.best.cost
+				)} = {formatNumber(alpha * opt.best.cost)}.
 				<CitationTag cite={{ deck: 'informed', slide: 38 }} />
 			</span>
 		{/if}

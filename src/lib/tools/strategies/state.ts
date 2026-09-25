@@ -76,6 +76,39 @@ export function defaultStrategiesState(): StrategiesState {
 	};
 }
 
+/** A whole number in [min, max]: rounded and clamped (min for NaN). */
+export function wholeIn(v: number, min: number, max: number): number {
+	if (!Number.isFinite(v)) return Number.isNaN(v) ? min : v > 0 ? max : min;
+	return Math.min(max, Math.max(min, Math.round(v)));
+}
+
+/** A number in [min, max] (min for NaN). */
+export function numberIn(v: number, min: number, max: number): number {
+	if (Number.isNaN(v)) return min;
+	return Math.min(max, Math.max(min, v));
+}
+
+export type CountFields = Pick<StrategiesState, 'b' | 'd' | 'm' | 'cStar' | 'eps'>;
+
+/**
+ * Node-count inputs made valid: b, d, and m whole and in range, C* and ε in
+ * range. Number fields can report a value such as 2.5 while it is being typed;
+ * the counts need whole exponents, and the saved state must pass
+ * `isSavedStrategiesState`.
+ */
+export function cleanCounts(v: CountFields): CountFields {
+	return {
+		b: wholeIn(v.b, 1, MAX_B),
+		d: wholeIn(v.d, 0, MAX_DEPTH),
+		m: wholeIn(v.m, 0, MAX_DEPTH),
+		cStar: numberIn(v.cStar, 0, MAX_C_STAR),
+		eps: numberIn(v.eps, MIN_EPS, MAX_EPS)
+	};
+}
+
+/** Disks for the Towers of Hanoi note, whole and in range. */
+export const cleanDisks = (n: number): number => wholeIn(n, 1, MAX_DISKS);
+
 export const isMode = (v: unknown): v is RepeatMode =>
 	typeof v === 'string' && (MODES as readonly string[]).includes(v);
 

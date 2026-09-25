@@ -102,6 +102,45 @@ export function orderProgress(pops: readonly number[], step: number): OrderProgr
 	return { taken, current: taken > before ? taken - 1 : null };
 }
 
+/**
+ * An expansion order split for display into three runs of text: the states
+ * taken off the frontier before this step, the one taken off at this step,
+ * and the rest. Names keep their spaces unbreakable ("Rimnicu Vilcea"), and
+ * the ", " between two runs goes with the run before the current state or
+ * starts the rest. Three runs instead of one element per state keep stepping
+ * through orders of thousands of states fast.
+ */
+export interface OrderRuns {
+	done: string;
+	/** The state taken off at this step, or null. */
+	current: string | null;
+	todo: string;
+}
+
+const NBSP = '\u00a0';
+
+/** `order` with unbreakable spaces inside each name (compute once per order). */
+export const unbreakableNames = (order: readonly string[]): string[] =>
+	order.map((name) => name.replace(/ /g, NBSP));
+
+/** See `OrderRuns`; `names` from `unbreakableNames`, `taken` and `current` as in `OrderProgress`. */
+export function orderRuns(
+	names: readonly string[],
+	taken: number,
+	current: number | null
+): OrderRuns {
+	const n = names.length;
+	const t = Math.max(0, Math.min(Math.trunc(taken) || 0, n));
+	// The current state is always the last one taken off.
+	const c = current !== null && current === t - 1 ? current : null;
+	const doneEnd = c ?? t;
+	return {
+		done: names.slice(0, doneEnd).join(', ') + (c !== null && doneEnd > 0 ? ', ' : ''),
+		current: c === null ? null : names[c],
+		todo: (t > 0 && t < n ? ', ' : '') + names.slice(t).join(', ')
+	};
+}
+
 export interface IterationRow {
 	/** The depth limit. */
 	limit: number;

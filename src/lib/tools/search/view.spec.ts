@@ -13,12 +13,14 @@ import {
 	missingHeuristic,
 	optimality,
 	orderProgress,
+	orderRuns,
 	popCounts,
 	problemFacts,
 	resolveAnnotation,
 	runSearch,
 	searchOptions,
-	stoppedBy
+	stoppedBy,
+	unbreakableNames
 } from './view';
 
 const settings = settingsOf(defaultSearchState());
@@ -205,5 +207,71 @@ describe('optimality and limits', () => {
 		expect(optimality(none, island).text).toBe('No goal state can be reached from G.');
 		const nodes = search(graphProblem(ROMANIA_PROBLEM), { strategy: 'bfs', maxNodes: 10 });
 		expect(stoppedBy(nodes)).toBe('nodes');
+	});
+});
+
+describe('orderRuns', () => {
+	const names = unbreakableNames(['Arad', 'Sibiu', 'Rimnicu Vilcea', 'Fagaras']);
+	const text = (r: ReturnType<typeof orderRuns>) => `${r.done}${r.current ?? ''}${r.todo}`;
+
+	it('keeps names with spaces together', () => {
+		expect(names[2]).toBe('Rimnicu\u00a0Vilcea');
+	});
+
+	it('splits the order at the step, with the separators in between', () => {
+		expect(orderRuns(names, 0, null)).toEqual({
+			done: '',
+			current: null,
+			todo: 'Arad, Sibiu, Rimnicu\u00a0Vilcea, Fagaras'
+		});
+		expect(orderRuns(names, 1, 0)).toEqual({
+			done: '',
+			current: 'Arad',
+			todo: ', Sibiu, Rimnicu\u00a0Vilcea, Fagaras'
+		});
+		expect(orderRuns(names, 3, 2)).toEqual({
+			done: 'Arad, Sibiu, ',
+			current: 'Rimnicu\u00a0Vilcea',
+			todo: ', Fagaras'
+		});
+		// A step that takes nothing off (init, fail): no current state.
+		expect(orderRuns(names, 2, null)).toEqual({
+			done: 'Arad, Sibiu',
+			current: null,
+			todo: ', Rimnicu\u00a0Vilcea, Fagaras'
+		});
+		expect(orderRuns(names, 4, 3)).toEqual({
+			done: 'Arad, Sibiu, Rimnicu\u00a0Vilcea, ',
+			current: 'Fagaras',
+			todo: ''
+		});
+		for (const [taken, current] of [
+			[0, null],
+			[1, 0],
+			[2, null],
+			[3, 2],
+			[4, 3],
+			[4, null]
+		] as const) {
+			expect(text(orderRuns(names, taken, current))).toBe(names.join(', '));
+		}
+	});
+
+	it('ignores out-of-range input', () => {
+		expect(orderRuns(names, 99, 1)).toEqual({ done: names.join(', '), current: null, todo: '' });
+		expect(orderRuns(names, -3, null).todo).toBe(names.join(', '));
+		expect(orderRuns([], 0, null)).toEqual({ done: '', current: null, todo: '' });
+	});
+
+	it('matches the progress of a run at every step', () => {
+		const r = runSearch(TINY_PROBLEM, { ...settings, strategy: 'bfs' });
+		const pops = popCounts(r);
+		const all = unbreakableNames(r.order);
+		r.steps.forEach((_, i) => {
+			const { taken, current } = orderProgress(pops, i);
+			const runs = orderRuns(all, taken, current);
+			expect(text(runs)).toBe(all.join(', '));
+			if (current !== null) expect(runs.current).toBe(r.order[current]);
+		});
 	});
 });

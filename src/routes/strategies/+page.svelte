@@ -51,6 +51,7 @@
 		defaultStrategiesState,
 		isSavedStrategiesState,
 		savedStateOf,
+		wholeIn,
 		type StrategiesState
 	} from '$lib/tools/strategies/state';
 	import { syncToHash } from '$lib/url-state';
@@ -97,7 +98,16 @@
 
 	const editLink = $derived(spec ? toolLink('search', { graph: text }) : null);
 	const linkFor = (strategy: ComparedStrategy) =>
-		spec ? toolLink('search', { graph: text, strategy, mode: s.mode }) : null;
+		spec
+			? toolLink('search', {
+					graph: text,
+					strategy,
+					mode: s.mode,
+					// The search tool allows up to 5,000 expansions.
+					maxExpansions: Math.min(s.limit, 5000),
+					...(strategy === 'wastar' ? { weight: s.alpha } : {})
+				})
+			: null;
 
 	const presetId = $derived(custom ? null : s.preset);
 	/** The loaded preset while its mode is on (its description is about that mode). */
@@ -249,7 +259,7 @@
 							/>
 							<NumberField
 								label="Expansion limit"
-								bind:value={s.limit}
+								bind:value={() => s.limit, (v) => (s.limit = wholeIn(v, MIN_LIMIT, MAX_LIMIT))}
 								min={MIN_LIMIT}
 								max={MAX_LIMIT}
 								size="sm"
@@ -329,7 +339,7 @@
 				<div class="question">
 					<p class="q">When is UCS equivalent to BFS?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 45 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							When all step costs are equal
 							<CitationTag cite={{ deck: 'uninformed', slide: 40 }} />. The path cost g(n) then
@@ -346,7 +356,7 @@
 				<div class="question">
 					<p class="q">Can the complexity of UCS exceed the complexity of BFS?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 45 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Yes. UCS takes time and space O(b<sup>C*/ε</sup>), which can be greater than O(bᵈ):
 							the search can explore long paths of small steps before shorter paths of larger steps
@@ -363,7 +373,7 @@
 				<div class="question">
 					<p class="q">How to make DFS complete?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 45 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							Modify it to avoid repeated states along the path: it is then complete in finite
 							spaces <CitationTag cite={{ deck: 'uninformed', slide: 32 }} />. Depth-first tree
@@ -379,7 +389,7 @@
 				<div class="question">
 					<p class="q">When is DFS better than BFS?</p>
 					<CitationTag cite={{ deck: 'uninformed', slide: 45 }} />
-					<Disclosure>
+					<Disclosure openSummary="Hide answer">
 						<p>
 							When there are lots of solutions, DFS may be much faster than BFS
 							<CitationTag cite={{ deck: 'uninformed', slide: 32 }} />. It also needs only linear

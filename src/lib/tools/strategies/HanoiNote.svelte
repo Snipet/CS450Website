@@ -7,7 +7,7 @@
 	import CitationTag from '$lib/components/ui/CitationTag.svelte';
 	import NumberField from '$lib/components/ui/NumberField.svelte';
 	import { HANOI_BRANCHING, hanoiFacts, hanoiText } from './counts';
-	import { MAX_DISKS } from './state';
+	import { MAX_DISKS, cleanDisks } from './state';
 
 	interface Props {
 		disks: number;
@@ -15,11 +15,13 @@
 
 	let { disks = $bindable() }: Props = $props();
 
-	const text = $derived(hanoiText(hanoiFacts(disks)));
+	// Whole, in-range (a number field can report 3.5 while it is typed).
+	const n = $derived(cleanDisks(disks));
+	const text = $derived(hanoiText(hanoiFacts(n)));
 
 	/** Disks drawn on the first peg (at most 8; more are summarized in the label). */
 	const MAX_DRAWN = 8;
-	const drawn = $derived(Math.min(disks, MAX_DRAWN));
+	const drawn = $derived(Math.min(n, MAX_DRAWN));
 	const W = 260;
 	const H = 96;
 	const BASE = H - 8;
@@ -35,8 +37,8 @@
 	}
 
 	const label = $derived(
-		`Towers of Hanoi: three pegs with ${disks} ${disks === 1 ? 'disk' : 'disks'} stacked on the first peg, largest at the bottom${
-			disks > MAX_DRAWN ? ` (${MAX_DRAWN} drawn)` : ''
+		`Towers of Hanoi: three pegs with ${n} ${n === 1 ? 'disk' : 'disks'} stacked on the first peg, largest at the bottom${
+			n > MAX_DRAWN ? ` (${MAX_DRAWN} drawn)` : ''
 		}.`
 	);
 </script>
@@ -50,7 +52,13 @@
 	</p>
 
 	<div class="controls">
-		<NumberField label="Disks n" bind:value={disks} min={1} max={MAX_DISKS} size="sm" />
+		<NumberField
+			label="Disks n"
+			bind:value={() => disks, (v) => (disks = cleanDisks(v))}
+			min={1}
+			max={MAX_DISKS}
+			size="sm"
+		/>
 		<svg viewBox="0 0 {W} {H}" role="img" aria-label={label} class="pegs">
 			<rect class="base" x="4" y={BASE} width={W - 8} height="4" rx="2" />
 			{#each PEG_X as x (x)}
@@ -68,8 +76,8 @@
 					style="fill: var(--tok-{i % 6}); stroke: var(--tok-{i % 6})"
 				/>
 			{/each}
-			{#if disks > MAX_DRAWN}
-				<text class="more" x={PEG_X[0]} y="8">+{disks - MAX_DRAWN}</text>
+			{#if n > MAX_DRAWN}
+				<text class="more" x={PEG_X[0]} y="8">+{n - MAX_DRAWN}</text>
 			{/if}
 		</svg>
 	</div>
@@ -82,10 +90,11 @@
 			</dd>
 		</div>
 		<div>
-			<dt>O(bᵈ) at that depth</dt>
+			<!-- Not "O(bᵈ) …": the labels are set in capitals, which would turn b into B. -->
+			<dt>Search cost at that depth</dt>
 			<dd>
 				<span class="mono"
-					>{`b = ${HANOI_BRANCHING}, d = ${text.moves}: ${text.power}`}{text.value
+					>{`O(bᵈ) with b = ${HANOI_BRANCHING}, d = ${text.moves}: ${text.power}`}{text.value
 						? ` = ${text.value}`
 						: ''}</span
 				>

@@ -1,7 +1,7 @@
 /**
  * The search tool's URL state: the graph text (formatGraphText) plus the
  * search settings and the current step. A link carrying only
- * LinkStates['search'] ({ graph, strategy?, mode? }) is accepted; the other
+ * LinkStates['search'] (graph plus optional settings) is accepted; the other
  * fields take their defaults.
  */
 import type { Annotation } from '$lib/components/search/describe';
@@ -135,6 +135,31 @@ export const isMaxExpansions = (v: unknown): v is number =>
 export const isWeight = (v: unknown): v is number =>
 	typeof v === 'number' && Number.isFinite(v) && v >= MIN_WEIGHT && v <= MAX_WEIGHT;
 export const isStep = (v: unknown): v is number => isIntIn(v, 0, Number.MAX_SAFE_INTEGER);
+
+/** A whole number in [min, max]: rounded and clamped (min for NaN). */
+function wholeIn(v: number, min: number, max: number): number {
+	if (!Number.isFinite(v)) return Number.isNaN(v) ? min : v > 0 ? max : min;
+	return Math.min(max, Math.max(min, Math.round(v)));
+}
+
+/**
+ * A settings change with its numbers made valid: the depth limit and the
+ * expansion limit whole and in range, α finite and in range. Number fields can
+ * report a value such as 2.5 while it is being typed; the run and the saved
+ * state (which `isSavedSearchState` checks) only ever see valid numbers.
+ */
+export function cleanSettings(patch: Partial<SearchSettings>): Partial<SearchSettings> {
+	const out = { ...patch };
+	if (out.depthLimit !== undefined)
+		out.depthLimit = wholeIn(out.depthLimit, MIN_DEPTH_LIMIT, MAX_DEPTH_LIMIT);
+	if (out.maxExpansions !== undefined)
+		out.maxExpansions = wholeIn(out.maxExpansions, MIN_MAX_EXPANSIONS, MAX_MAX_EXPANSIONS);
+	if (out.weight !== undefined)
+		out.weight = Number.isFinite(out.weight)
+			? Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, out.weight))
+			: DEFAULT_WEIGHT;
+	return out;
+}
 
 /** Whether graph text parses without errors. */
 export function isValidGraphText(text: string): boolean {

@@ -15,7 +15,16 @@
 		percentMore,
 		type Series
 	} from './counts';
-	import { MAX_B, MAX_C_STAR, MAX_DEPTH, MAX_EPS, MIN_EPS } from './state';
+	import {
+		MAX_B,
+		MAX_C_STAR,
+		MAX_DEPTH,
+		MAX_EPS,
+		MIN_EPS,
+		cleanCounts,
+		numberIn,
+		wholeIn
+	} from './state';
 
 	interface Props {
 		b: number;
@@ -33,7 +42,9 @@
 		eps = $bindable()
 	}: Props = $props();
 
-	const counts = $derived(nodeCounts({ b, d, m, cStar, eps }));
+	// Whole, in-range inputs (a number field can report 2.5 while it is typed).
+	const inputs = $derived(cleanCounts({ b, d, m, cStar, eps }));
+	const counts = $derived(nodeCounts(inputs));
 	const k = $derived(counts.ucs.capped ? MAX_EXPONENT : counts.ucs.depth);
 
 	const spaceRows = $derived([
@@ -49,27 +60,54 @@
 		<p class="sym">{s.symbolic}</p>
 		<p>= {s.powers}</p>
 		{#if s.values !== s.powers}<p>= {s.values}</p>{/if}
-		<p class="total">= <strong>{formatLarge(s.total)}</strong></p>
+		<!-- Totals over 15 digits are shown rounded, in powers of ten. -->
+		<p class="total">
+			{s.total.toString().length > 15 ? '≈' : '='} <strong>{formatLarge(s.total)}</strong>
+		</p>
 	</div>
 {/snippet}
 
 <div class="counts">
 	<fieldset class="inputs">
 		<legend class="visually-hidden">Inputs</legend>
-		<NumberField label="Branching factor b" bind:value={b} min={1} max={MAX_B} size="sm" />
-		<NumberField label="Solution depth d" bind:value={d} min={0} max={MAX_DEPTH} size="sm" />
-		<NumberField label="Longest path m" bind:value={m} min={0} max={MAX_DEPTH} size="sm" />
-		<NumberField label="Optimal cost C*" bind:value={cStar} min={0} max={MAX_C_STAR} size="sm" />
+		<NumberField
+			label="Branching factor b"
+			bind:value={() => b, (v) => (b = wholeIn(v, 1, MAX_B))}
+			min={1}
+			max={MAX_B}
+			size="sm"
+		/>
+		<NumberField
+			label="Solution depth d"
+			bind:value={() => d, (v) => (d = wholeIn(v, 0, MAX_DEPTH))}
+			min={0}
+			max={MAX_DEPTH}
+			size="sm"
+		/>
+		<NumberField
+			label="Longest path m"
+			bind:value={() => m, (v) => (m = wholeIn(v, 0, MAX_DEPTH))}
+			min={0}
+			max={MAX_DEPTH}
+			size="sm"
+		/>
+		<NumberField
+			label="Optimal cost C*"
+			bind:value={() => cStar, (v) => (cStar = numberIn(v, 0, MAX_C_STAR))}
+			min={0}
+			max={MAX_C_STAR}
+			size="sm"
+		/>
 		<NumberField
 			label="Least step cost ε"
-			bind:value={eps}
+			bind:value={() => eps, (v) => (eps = numberIn(v, MIN_EPS, MAX_EPS))}
 			min={MIN_EPS}
 			max={MAX_EPS}
 			step={0.1}
 			size="sm"
 		/>
 	</fieldset>
-	{#if m < d}
+	{#if inputs.m < inputs.d}
 		<p class="note">m is usually at least d: the optimal solution is itself a path.</p>
 	{/if}
 
@@ -134,11 +172,11 @@
 				</p>
 				{@render sum(counts.ucs)}
 				<p class="compare">
-					{#if k > d}
-						k = {k} &gt; d = {d}: up to {formatQuotient(counts.ucs.total, counts.bfs.total)} times the
-						BFS count.
+					{#if k > inputs.d}
+						k = {k} &gt; d = {inputs.d}: up to {formatQuotient(counts.ucs.total, counts.bfs.total)} times
+						the BFS count.
 					{:else}
-						k = {k} ≤ d = {d}: no more than the BFS count.
+						k = {k} ≤ d = {inputs.d}: no more than the BFS count.
 					{/if}
 				</p>
 			</dd>
