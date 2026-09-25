@@ -162,6 +162,7 @@ export interface KeyTarget {
 
 // Roles whose own arrow/Home/End/Space handling must win.
 const WIDGET_ROLES = new Set([
+	'application',
 	'textbox',
 	'searchbox',
 	'combobox',
