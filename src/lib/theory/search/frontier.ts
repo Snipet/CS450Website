@@ -4,7 +4,7 @@
  * best-first and A*. The priority queue breaks ties first in, first out.
  *
  * All three support lazy removal (`remove`), used when a cheaper node for the
- * same state replaces a frontier node.
+ * same state replaces a frontier node. Node ids are pushed at most once.
  */
 
 export type FrontierKind = 'fifo' | 'lifo' | 'priority';
@@ -32,22 +32,21 @@ class FifoFrontier implements Frontier {
 	readonly kind = 'fifo';
 	#items: number[] = [];
 	#head = 0;
+	#present = new Set<number>();
 	#removed = new Set<number>();
-	#live = 0;
 
 	get size() {
-		return this.#live;
+		return this.#present.size;
 	}
 	push(id: number) {
 		this.#items.push(id);
-		this.#removed.delete(id);
-		this.#live++;
+		this.#present.add(id);
 	}
 	pop() {
 		while (this.#head < this.#items.length) {
 			const id = this.#items[this.#head++];
 			if (this.#removed.delete(id)) continue;
-			this.#live--;
+			this.#present.delete(id);
 			if (this.#head > 1024 && this.#head * 2 > this.#items.length) {
 				this.#items = this.#items.slice(this.#head);
 				this.#head = 0;
@@ -57,13 +56,7 @@ class FifoFrontier implements Frontier {
 		return undefined;
 	}
 	remove(id: number) {
-		for (let i = this.#head; i < this.#items.length; i++) {
-			if (this.#items[i] === id && !this.#removed.has(id)) {
-				this.#removed.add(id);
-				this.#live--;
-				return;
-			}
-		}
+		if (this.#present.delete(id)) this.#removed.add(id);
 	}
 	snapshot() {
 		const out: number[] = [];
@@ -78,31 +71,27 @@ class FifoFrontier implements Frontier {
 class LifoFrontier implements Frontier {
 	readonly kind = 'lifo';
 	#items: number[] = [];
+	#present = new Set<number>();
 	#removed = new Set<number>();
-	#live = 0;
 
 	get size() {
-		return this.#live;
+		return this.#present.size;
 	}
 	push(id: number) {
 		this.#items.push(id);
-		this.#removed.delete(id);
-		this.#live++;
+		this.#present.add(id);
 	}
 	pop() {
 		while (this.#items.length) {
 			const id = this.#items.pop()!;
 			if (this.#removed.delete(id)) continue;
-			this.#live--;
+			this.#present.delete(id);
 			return id;
 		}
 		return undefined;
 	}
 	remove(id: number) {
-		if (this.#items.includes(id) && !this.#removed.has(id)) {
-			this.#removed.add(id);
-			this.#live--;
-		}
+		if (this.#present.delete(id)) this.#removed.add(id);
 	}
 	snapshot() {
 		const out: number[] = [];
@@ -128,17 +117,16 @@ class PriorityFrontier implements Frontier {
 	readonly kind = 'priority';
 	#heap: Entry[] = [];
 	#seq = 0;
+	#present = new Set<number>();
 	#removed = new Set<number>();
-	#live = 0;
 
 	get size() {
-		return this.#live;
+		return this.#present.size;
 	}
 	push(id: number, priority: number) {
 		const heap = this.#heap;
 		heap.push({ id, priority, seq: this.#seq++ });
-		this.#removed.delete(id);
-		this.#live++;
+		this.#present.add(id);
 		let i = heap.length - 1;
 		while (i > 0) {
 			const p = (i - 1) >> 1;
@@ -151,7 +139,7 @@ class PriorityFrontier implements Frontier {
 		while (this.#heap.length) {
 			const top = this.#take();
 			if (this.#removed.delete(top.id)) continue;
-			this.#live--;
+			this.#present.delete(top.id);
 			return top.id;
 		}
 		return undefined;
@@ -177,11 +165,7 @@ class PriorityFrontier implements Frontier {
 		return top;
 	}
 	remove(id: number) {
-		if (this.#removed.has(id)) return;
-		if (this.#heap.some((e) => e.id === id)) {
-			this.#removed.add(id);
-			this.#live--;
-		}
+		if (this.#present.delete(id)) this.#removed.add(id);
 	}
 	snapshot() {
 		return this.#heap

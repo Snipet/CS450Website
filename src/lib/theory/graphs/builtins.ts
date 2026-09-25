@@ -91,8 +91,10 @@ export const SLD_BUCHAREST: Readonly<Record<string, number>> = {
 
 /**
  * Straight-line distance to Fagaras. The slides give no table for Fagaras;
- * these are distances measured on the slide's map drawing and scaled so that
- * the drawing's Arad–Bucharest distance matches the table's 366 km, rounded.
+ * these are distances measured on the slide's map drawing, scaled so that no
+ * road is shorter than its drawn length, and rounded down. That scaling makes
+ * the table consistent (h(n) ≤ c(n, n') + h(n') on every road), and so also
+ * admissible.
  */
 export const SLD_FAGARAS: Readonly<Record<string, number>> = sldTable('Fagaras');
 
@@ -102,9 +104,9 @@ function sldTable(goal: string): Record<string, number> {
 		const [bx, by] = ROMANIA_POS[b];
 		return Math.hypot(ax - bx, ay - by);
 	};
-	const scale = SLD_BUCHAREST.Arad / dist('Arad', 'Bucharest');
+	const scale = Math.min(...ROMANIA_ROADS.map(([a, b, cost]) => cost / dist(a, b)));
 	return Object.fromEntries(
-		Object.keys(ROMANIA_POS).map((city) => [city, Math.round(dist(city, goal) * scale)])
+		Object.keys(ROMANIA_POS).map((city) => [city, Math.floor(dist(city, goal) * scale)])
 	);
 }
 
@@ -237,7 +239,7 @@ export const GREEDY_TRAP_PROBLEM: GraphProblemSpec = {
 	graph: GREEDY_TRAP_GRAPH,
 	start: 'S',
 	goals: ['G'],
-	h: { S: 3, T1: 2, T2: 1, B1: 1, B2: 1, B3: 1, B4: 1, B5: 1, G: 0 }
+	h: { S: 2, T1: 2, T2: 1, B1: 1, B2: 1, B3: 1, B4: 1, B5: 1, G: 0 }
 };
 
 // ---------------------------------------------------------------------------

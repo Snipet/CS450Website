@@ -48,6 +48,6 @@ export function graphProblem(
 		successors: (s): Successor<string>[] =>
 			(adj.get(s) ?? []).map((n) => ({ action: n.to, state: n.to, cost: n.cost })),
 		isGoal: (s) => goals.has(s),
-		h: h ? (s) => h[s] ?? 0 : undefined
+		h: h ? (s) => (Object.hasOwn(h, s) ? h[s] : 0) : undefined
 	};
 }
