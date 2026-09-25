@@ -18,6 +18,8 @@ UI contracts, and the quality bar.
 - Colors come from the tokens in `src/app.css`; both light and dark themes must work.
 - Search traces follow the defaults in ARCHITECTURE §3.4 (alphabetical successors, goal
   test on expansion, FIFO ties); the golden tests pin the slide traces.
+- A tool keeps its view in the URL hash with `syncToHash` and a `validate` guard (§5.1);
+  links between tools go through `toolLink` and the `LinkStates` in `links.ts` (§5.2).
 
 ## Commands
 
