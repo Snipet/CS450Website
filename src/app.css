@@ -57,7 +57,7 @@
 	--shadow-sm: 0 1px 2px rgb(20 20 30 / 0.06);
 	--shadow: 0 1px 3px rgb(20 20 30 / 0.08), 0 4px 12px rgb(20 20 30 / 0.05);
 
-	/* Semantic colors used by the visualizations (see docs/ARCHITECTURE.md §3.6) */
+	/* Semantic colors used by the visualizations (see docs/ARCHITECTURE.md §3.2) */
 	--active: #c98a00; /* node being expanded, current step */
 	--active-soft: #fdf1d2;
 	--accept: #1e8449; /* goal test passed, solution path */

@@ -107,7 +107,7 @@
 		<span
 			class="count"
 			id="{uid}-count"
-			aria-live={stepper.playing ? 'off' : 'polite'}
+			aria-live={stepper.playing || (label && total > 0) ? 'off' : 'polite'}
 			aria-atomic="true">{counter}</span
 		>
 		{#if showSpeed}

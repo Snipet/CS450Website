@@ -139,10 +139,12 @@ describe('statusesAt', () => {
 
 	it('IDS: nodes at the limit are cut off; each iteration starts over', () => {
 		const r = run(BINARY_TREE_PROBLEM, { strategy: 'ids' });
-		// Step 6: limit 1, C is being cut off; B was cut off before.
+		// Step 6: limit 1, C is cut off (taken off the frontier, not expanded); B was cut off before.
 		const at6 = statusesAt(r, 6);
-		expect(byLabel(r, at6, 'current')).toEqual(['C']);
-		expect(byLabel(r, at6, 'cutoff')).toEqual(['B']);
+		expect(r.steps[6].kind).toBe('cutoff');
+		expect(currentNode(r, 6)).not.toBeNull();
+		expect(byLabel(r, at6, 'current')).toEqual([]);
+		expect(byLabel(r, at6, 'cutoff')).toEqual(['B', 'C']);
 		expect(byLabel(r, at6, 'expanded')).toEqual(['A']);
 		// Step 8 starts limit 2 with a fresh root on the frontier.
 		const at8 = statusesAt(r, 8);
@@ -156,6 +158,19 @@ describe('statusesAt', () => {
 		const last = statusesAt(r, r.steps.length - 1);
 		expect(byLabel(r, last, 'goal')).toEqual(['G']);
 		expect(statusesAt(r, 99).size).toBe(0);
+	});
+
+	it('a start state that is a goal, tested when generated, is never on the frontier', () => {
+		for (const record of ['full', 'nodes'] as const) {
+			const r = run(
+				{ ...TINY_PROBLEM, start: 'G' },
+				{ strategy: 'bfs', goalTest: 'generate', record }
+			);
+			expect(r.steps.map((s) => s.kind)).toEqual(['init', 'goal']);
+			expect(frontierOrder(r, 1)).toEqual([]);
+			expect(byLabel(r, statusesAt(r, 1), 'goal')).toEqual(['G']);
+			expect(graphHighlightAt(r, 1)).toMatchObject({ frontier: [], path: ['G'] });
+		}
 	});
 
 	it('nodes left over after a limit stop', () => {
@@ -176,15 +191,36 @@ describe('graphHighlightAt', () => {
 		expect(h.path).toEqual([]);
 		const end = graphHighlightAt(r, r.steps.length - 1);
 		expect(end.path).toEqual(['Arad', 'Sibiu', 'Rimnicu Vilcea', 'Pitesti', 'Bucharest']);
-		expect(end.current).toBe('Bucharest');
+		// The goal node is taken off the frontier but not expanded.
+		expect(end.current).toBeUndefined();
 		expect(graphHighlightAt(r, 0)).toEqual({
 			current: undefined,
 			frontier: ['Arad'],
 			explored: [],
 			path: [],
-			dropped: []
+			dropped: [],
+			cutoff: []
 		});
-		expect(graphHighlightAt(r, 99)).toEqual({ frontier: [], explored: [], path: [], dropped: [] });
+		expect(graphHighlightAt(r, 99)).toEqual({
+			frontier: [],
+			explored: [],
+			path: [],
+			dropped: [],
+			cutoff: []
+		});
+	});
+
+	it('a state cut off at the depth limit is neither being expanded nor dropped', () => {
+		const r = run(BINARY_TREE_PROBLEM, { strategy: 'ids' });
+		// Step 5: limit 1, B is taken off the frontier and cut off.
+		expect(r.steps[5].kind).toBe('cutoff');
+		const h = graphHighlightAt(r, 5);
+		expect(h.current).toBeUndefined();
+		expect(h.cutoff).toEqual(['B']);
+		expect(h.dropped).toEqual([]);
+		expect(h.frontier).toEqual(['C']);
+		// The next expand step has no cut-off state.
+		expect(graphHighlightAt(r, 9)).toMatchObject({ current: 'A', cutoff: [] });
 	});
 
 	it('tree search lists expanded states as explored, once each', () => {

@@ -172,6 +172,16 @@
 	.panel {
 		padding-top: var(--space-4);
 	}
+	/* Narrow screens: wrap the tabs rather than hide some off the edge. */
+	@media (max-width: 480px) {
+		.tablist {
+			flex-wrap: wrap;
+			overflow-x: visible;
+		}
+		.tab {
+			padding: 8px 8px 10px;
+		}
+	}
 	.panel:focus-visible {
 		outline-offset: 4px;
 		border-radius: var(--radius-sm);

@@ -10,12 +10,17 @@
 	let { cite, size = 'sm' }: Props = $props();
 
 	const text = $derived(formatCitation(cite));
+	// When space runs out the deck title is shortened; the slide part always shows.
+	const title = $derived(decks[cite.deck].title);
+	const where = $derived(text.slice(title.length));
 </script>
 
 <span class={['cite', size]} title="Lecture: {decks[cite.deck].topic}">
 	<Icon name="book" size={size === 'sm' ? 13 : 15} />
 	<span class="visually-hidden">Lecture reference:</span>
-	<span class="text">{text}</span>
+	<span class="text"
+		><span class="title">{title}</span>{#if where}<span class="where">{where}</span>{/if}</span
+	>
 </span>
 
 <style>
@@ -41,7 +46,16 @@
 		padding: 2px 10px 2px 8px;
 	}
 	.text {
+		display: inline-flex;
+		min-width: 0;
+	}
+	.title {
+		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.where {
+		flex: none;
+		white-space: pre;
 	}
 </style>

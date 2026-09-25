@@ -49,8 +49,8 @@ use (docs/ARCHITECTURE.md §3.2). Build `items` with `graphLegend` or
 						<!-- Graphs ring goal states; trees also fill the goal node that was found. -->
 						{@render outline('goal-ring', 2.5)}
 						{@render outline(shape === 'pill' ? 'shape goal' : 'shape')}
-					{:else if key === 'dropped' && shape !== 'pill'}
-						<!-- State graphs ring a state whose node was not added. -->
+					{:else if (key === 'dropped' || key === 'cutoff') && shape !== 'pill'}
+						<!-- State graphs ring a state whose node was not added or was cut off. -->
 						{@render outline('shape')}
 						{@render outline('drop-ring', 3)}
 					{:else}

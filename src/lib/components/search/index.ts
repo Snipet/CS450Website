@@ -45,7 +45,10 @@ export {
 	treeLegend,
 	LEGEND_ORDER,
 	LEGEND_TEXT,
+	GRAPH_STATUS_WORDS,
+	statusWord,
 	type GraphHighlight,
+	type GraphStatusKey,
 	type LegendKey
 } from './legend';
 export { type LoopSide, type NodeFrame, type NodeShape } from './graph-scene';

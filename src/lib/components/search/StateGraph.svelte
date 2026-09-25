@@ -15,6 +15,7 @@ refits when the graph changes (not when only the highlight changes).
 -->
 <script lang="ts">
 	import { untrack, type Snippet } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import type { GraphEdge, WeightedGraph } from '$lib/theory/graphs';
 	import { formatNumber } from './describe';
@@ -31,7 +32,13 @@ refits when the graph changes (not when only the highlight changes).
 		type SceneLabel,
 		type SceneNode
 	} from './graph-scene';
-	import { graphLegend, type GraphHighlight } from './legend';
+	import {
+		graphLegend,
+		statusWord,
+		type GraphHighlight,
+		type GraphStatusKey,
+		type LegendKey
+	} from './legend';
 	import StatusLegend from './StatusLegend.svelte';
 
 	interface Props {
@@ -75,6 +82,13 @@ refits when the graph changes (not when only the highlight changes).
 		 * for its highlight such as "being expanded" or "goal state").
 		 */
 		describeNode?: (id: string, status: readonly string[]) => string;
+		/**
+		 * The page's own words for statuses, e.g. `{ dropped: 'Overestimates h*' }`
+		 * when `highlight.dropped` marks something else than repeated states. They
+		 * caption the legend and, with a leading capital lowered, name the states
+		 * ("Arad, h = 366, overestimates h*"). Unset keys keep the defaults.
+		 */
+		statusText?: Partial<Record<LegendKey, string>>;
 		class?: string;
 	}
 
@@ -97,6 +111,7 @@ refits when the graph changes (not when only the highlight changes).
 		nodeBox,
 		nodePicture,
 		describeNode,
+		statusText,
 		class: className
 	}: Props = $props();
 
@@ -158,6 +173,7 @@ refits when the graph changes (not when only the highlight changes).
 			explored: new Set(h.explored ?? []),
 			path: new Set(path),
 			dropped: new Set(h.dropped ?? []),
+			cutoff: new Set(h.cutoff ?? []),
 			pathEdges: pathEdgeKeys(path, graph.directed)
 		};
 	});
@@ -168,12 +184,14 @@ refits when the graph changes (not when only the highlight changes).
 
 	function statusWords(id: string): string[] {
 		const words: string[] = [];
-		if (hl.current === id) words.push('being expanded');
-		if (hl.path.has(id)) words.push('on the solution path');
-		if (hl.frontier.has(id)) words.push('on the frontier');
-		if (hl.explored.has(id)) words.push('explored');
-		if (hl.dropped.has(id)) words.push('not added');
-		if (goalSet.has(id)) words.push('goal state');
+		const word = (key: GraphStatusKey) => statusWord(key, statusText);
+		if (hl.current === id) words.push(word('current'));
+		if (hl.path.has(id)) words.push(word('path'));
+		if (hl.frontier.has(id)) words.push(word('frontier'));
+		if (hl.explored.has(id)) words.push(word('explored'));
+		if (hl.dropped.has(id)) words.push(word('dropped'));
+		if (hl.cutoff.has(id)) words.push(word('cutoff'));
+		if (goalSet.has(id)) words.push(word('goal'));
 		if (prep.start === id) words.push('start state');
 		return words;
 	}
@@ -343,6 +361,17 @@ refits when the graph changes (not when only the highlight changes).
 		e.preventDefault();
 	}
 
+	/**
+	 * The keys above, as a native listener on the component: it runs before a
+	 * page's own shortcuts on an ancestor (Svelte delegates `onkeydown` to the
+	 * document root, which would run it after them), and a handled key is
+	 * marked with preventDefault so those shortcuts skip it.
+	 */
+	const ownKeys: Attachment<HTMLElement> = (node) => {
+		node.addEventListener('keydown', onKeyDown);
+		return () => node.removeEventListener('keydown', onKeyDown);
+	};
+
 	function activate(id: string) {
 		onnodeclick?.(id);
 	}
@@ -368,6 +397,7 @@ refits when the graph changes (not when only the highlight changes).
 			frontier: hl.frontier.has(id),
 			explored: hl.explored.has(id),
 			dropped: hl.dropped.has(id),
+			cutoff: hl.cutoff.has(id),
 			goal: goalSet.has(id),
 			selected: selected === id
 		};
@@ -408,10 +438,12 @@ refits when the graph changes (not when only the highlight changes).
 {#snippet nodeBody(n: SceneNode)}
 	{@const grow = markerGrow(n.id)}
 	{@const ringGap = n.outline.kind === 'square' ? 3 + grow : 4}
-	{@const focusGap = ringGap + (goalSet.has(n.id) ? 4 : 3) + (hl.dropped.has(n.id) ? 3 : 0)}
+	{@const ringed = hl.dropped.has(n.id) || hl.cutoff.has(n.id)}
+	{@const focusGap = ringGap + (goalSet.has(n.id) ? 4 : 3) + (ringed ? 3 : 0)}
 	<rect class="focus-ring" {...rectOf(n, focusGap)} />
 	{#if selected === n.id}<rect class="select-ring" {...rectOf(n, focusGap)} />{/if}
-	{#if hl.dropped.has(n.id)}
+	{#if ringed}
+		<!-- A dashed ring: the state's node was not added, or was cut off at the depth limit. -->
 		<rect class="drop-ring" {...rectOf(n, ringGap + (goalSet.has(n.id) ? 3.5 : 0))} />
 	{/if}
 	{#if goalSet.has(n.id)}<rect class="goal-ring" {...rectOf(n, ringGap)} />{/if}
@@ -446,8 +478,7 @@ refits when the graph changes (not when only the highlight changes).
 	{/each}
 {/snippet}
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class={['state-graph', className]} onkeydown={onKeyDown}>
+<div class={['state-graph', className]} {@attach ownKeys}>
 	<div class="canvas" style:height="{canvasHeight}px" bind:clientWidth={measured}>
 		<svg
 			bind:this={svgEl}
@@ -536,7 +567,8 @@ refits when the graph changes (not when only the highlight changes).
 				<g class="labels" aria-hidden="true">
 					{#each scene.nodes as n (n.id)}
 						{@const outside = n.outline.kind === 'square'}
-						{@const focus = hl.current === n.id || hl.path.has(n.id) || selected === n.id}
+						{@const focus =
+							hl.current === n.id || hl.path.has(n.id) || hl.cutoff.has(n.id) || selected === n.id}
 						{#if (outside && (!n.label.hidden || focus)) || (n.h && !n.h.hidden)}
 							<g class={['node', nodeClasses(n.id)]}>
 								{#if outside && (!n.label.hidden || focus)}{@render labelText(n, n.label)}{/if}
@@ -553,6 +585,7 @@ refits when the graph changes (not when only the highlight changes).
 			<StatusLegend
 				class="graph-legend"
 				items={legendItems}
+				labels={statusText}
 				shape={nodeShape === 'square' && !nodeBox ? 'square' : 'circle'}
 			/>
 		{/if}

@@ -22,6 +22,14 @@
 		variant = 'inline',
 		children
 	}: Props = $props();
+
+	// The content is rendered once the disclosure has been opened (and kept),
+	// so closed answers and editors cost nothing.
+	let opened = $state(false);
+	const show = $derived(open || opened);
+	$effect(() => {
+		if (open) opened = true;
+	});
 </script>
 
 <details class={['disclosure', variant]} bind:open>
@@ -31,7 +39,9 @@
 				? openSummary
 				: summary}{/if}
 	</summary>
-	<div class="content">{@render children?.()}</div>
+	<div class="content">
+		{#if show}{@render children?.()}{/if}
+	</div>
 </details>
 
 <style>

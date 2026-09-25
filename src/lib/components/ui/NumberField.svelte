@@ -39,14 +39,23 @@
 	// The text being edited; re-syncs whenever `value` changes from outside.
 	let text = $derived(String(value));
 
-	function clamp(n: number): number {
-		const snapped =
-			step > 0 && Number.isFinite(min) ? min + Math.round((n - min) / step) * step : n;
-		return Math.min(max, Math.max(min, Number(snapped.toFixed(10))));
+	// Whole-number fields (integer step and bounds) never take a fraction; other
+	// fields keep typed values as they are and only clamp them to [min, max].
+	const whole = $derived(
+		Number.isInteger(step) && (!Number.isFinite(min) || Number.isInteger(min))
+	);
+
+	function fit(n: number, snap: boolean): number {
+		let v = n;
+		if (snap && step > 0) {
+			const base = Number.isFinite(min) ? min : 0;
+			v = base + Math.round((n - base) / step) * step;
+		}
+		return Math.min(max, Math.max(min, Number(v.toFixed(10))));
 	}
 
-	function commit(n: number) {
-		const next = clamp(n);
+	function commit(n: number, snap = whole) {
+		const next = fit(Number.isFinite(n) ? n : value, snap);
 		if (next !== value) {
 			value = next;
 			onchange?.(next);
@@ -57,16 +66,17 @@
 	function oninput(event: Event & { currentTarget: HTMLInputElement }) {
 		text = event.currentTarget.value;
 		const n = event.currentTarget.valueAsNumber;
-		// Only accept complete, in-range numbers while typing; blur normalizes the rest.
-		if (Number.isFinite(n) && n >= min && n <= max && n !== value) {
+		// Only accept complete, in-range numbers while typing (whole numbers in a
+		// whole-number field); blur and Enter normalize the rest.
+		const ok = Number.isFinite(n) && n >= min && n <= max && (!whole || Number.isInteger(n));
+		if (ok && n !== value) {
 			value = n;
 			onchange?.(n);
 		}
 	}
 
 	function onblur(event: Event & { currentTarget: HTMLInputElement }) {
-		const n = event.currentTarget.valueAsNumber;
-		commit(Number.isFinite(n) ? n : value);
+		commit(event.currentTarget.valueAsNumber);
 	}
 </script>
 
@@ -79,7 +89,7 @@
 			tabindex="-1"
 			aria-label="Decrease {label}"
 			disabled={disabled || value <= min}
-			onclick={() => commit(value - step)}><Icon name="minus" size={14} /></button
+			onclick={() => commit(value - step, true)}><Icon name="minus" size={14} /></button
 		>
 		<input
 			id={inputId}
@@ -103,7 +113,7 @@
 			tabindex="-1"
 			aria-label="Increase {label}"
 			disabled={disabled || value >= max}
-			onclick={() => commit(value + step)}><Icon name="plus" size={14} /></button
+			onclick={() => commit(value + step, true)}><Icon name="plus" size={14} /></button
 		>
 	</div>
 </div>

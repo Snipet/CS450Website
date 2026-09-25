@@ -38,6 +38,8 @@ name, and, for graph search, the explored set.
 	const s = $derived(clampStep(result, step));
 	const name = $derived(label ?? ((n: SearchNode) => n.label));
 	const frontier = $derived(result.steps.length ? frontierOrder(result, s) : []);
+	/** The search returned or stopped at this step: no node is taken off next. */
+	const ended = $derived(result.steps[s]?.kind === 'goal' || result.steps[s]?.kind === 'fail');
 	const lifo = $derived(
 		result.strategy === 'dfs' || result.strategy === 'dls' || result.strategy === 'ids'
 	);
@@ -73,8 +75,8 @@ name, and, for graph search, the explored set.
 					{#each shownFrontier as id, i (id)}
 						{@const node = result.nodes[id]}
 						{@const prio = priorityLabel(result.strategy, node, weight)}
-						<li class={['chip', 'frontier', { next: i === 0 }]}>
-							{#if i === 0}<span class="tag">next</span>{/if}
+						<li class={['chip', 'frontier', { next: i === 0 && !ended }]}>
+							{#if i === 0 && !ended}<span class="tag">next</span>{/if}
 							<span class="name">{name(node)}</span>
 							{#if prio}<span class="prio">{prio}</span>{/if}
 						</li>

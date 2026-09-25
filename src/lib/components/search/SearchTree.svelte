@@ -5,12 +5,13 @@ The search tree of a `SearchResult` up to a step (docs/ARCHITECTURE.md §3.2,
 their places while stepping; nodes generated after the step are hidden. Each
 node shows its state name and, per `annotation`, g, h, f, or f=g+h underneath.
 
-Wide trees scroll inside the component (drag, scroll, or keyboard when
+Wide trees scroll inside the component (drag, scroll, or the arrow keys when
 focused) and zoom with the buttons or Ctrl/⌘ + wheel; the current node is
 kept in view.
 -->
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import type { SearchNode, SearchResult } from '$lib/theory/search';
 	import { defaultAnnotation, formatCount, type Annotation } from './describe';
@@ -97,7 +98,8 @@ kept in view.
 
 	const summary = $derived.by(() => {
 		const parts: string[] = [];
-		const lim = result.strategy === 'ids' ? ` (depth limit ${iteration})` : '';
+		const lim =
+			result.strategy === 'ids' || result.strategy === 'dls' ? ` (depth limit ${iteration})` : '';
 		parts.push(
 			`Search tree${lim}: ${visibleNodes.length} ${visibleNodes.length === 1 ? 'node' : 'nodes'}`
 		);
@@ -107,7 +109,13 @@ kept in view.
 		return `${parts.join('; ')}.`;
 	});
 
-	const legendItems = $derived(legend ? treeLegend(counts, { path: path.size > 0 }) : []);
+	// Nodes on the solution path are drawn in its color, whatever their status.
+	const legendItems = $derived.by(() => {
+		if (!legend) return [];
+		if (!path.size) return treeLegend(counts);
+		const shown = [...statuses].filter(([id, st]) => st === 'goal' || !path.has(id));
+		return treeLegend(countStatuses(new Map(shown)), { path: true });
+	});
 
 	function nodeClass(id: number, status: TreeNodeStatus) {
 		const node = result.nodes[id];
@@ -258,9 +266,25 @@ kept in view.
 		if (e.key === '+' || e.key === '=') setZoom(zoom * ZOOM_STEP);
 		else if (e.key === '-' || e.key === '_') setZoom(zoom / ZOOM_STEP);
 		else if (e.key === '0') fit();
-		else return;
+		else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target === scroller) {
+			// ← → scroll the tree while it has focus, as ↑ ↓ do (elsewhere a page may
+			// use them for stepping).
+			const dx = (e.shiftKey ? 160 : 48) * (e.key === 'ArrowLeft' ? -1 : 1);
+			scroller?.scrollBy({ left: dx, behavior: 'auto' });
+		} else return;
 		e.preventDefault();
 	}
+
+	/**
+	 * The keys above, as a native listener on the component: it runs before a
+	 * page's own shortcuts on an ancestor (Svelte delegates `onkeydown` to the
+	 * document root, which would run it after them), and a handled key is
+	 * marked with preventDefault so those shortcuts skip it.
+	 */
+	const ownKeys: Attachment<HTMLElement> = (node) => {
+		node.addEventListener('keydown', onKeyDown);
+		return () => node.removeEventListener('keydown', onKeyDown);
+	};
 
 	/** Pill outline grown by `g` px. */
 	const pill = (n: TreeSceneNode, g = 0) => ({
@@ -283,8 +307,7 @@ kept in view.
 	};
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class={['search-tree', className]} onkeydown={onKeyDown}>
+<div class={['search-tree', className]} {@attach ownKeys}>
 	{#if scene.shown < scene.total}
 		<p class="notice">
 			Showing the first {formatCount(scene.shown)} of {formatCount(scene.total)} nodes{result.strategy ===

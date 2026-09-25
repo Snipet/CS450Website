@@ -25,4 +25,14 @@
 		flex-wrap: wrap;
 		gap: var(--space-2);
 	}
+	/* Narrow: one line each, without a separator left dangling at a line end. */
+	@media (max-width: 480px) {
+		.inner {
+			flex-direction: column;
+			gap: var(--space-1);
+		}
+		.sep {
+			display: none;
+		}
+	}
 </style>

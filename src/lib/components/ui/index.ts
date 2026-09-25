@@ -1,4 +1,4 @@
-// Shared UI kit. See docs/ARCHITECTURE.md §5.3.
+// Shared UI kit. See docs/ARCHITECTURE.md §5.4.
 export { default as Badge } from './Badge.svelte';
 export { default as Button } from './Button.svelte';
 export { default as Callout } from './Callout.svelte';

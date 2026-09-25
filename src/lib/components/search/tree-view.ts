@@ -13,11 +13,12 @@ import {
 
 /**
  * Status of a search-tree node at a step (docs/ARCHITECTURE.md §3.2):
- * - `current`: the node of the step (taken off the frontier and expanded or cut off)
+ * - `current`: the node being expanded at the step
  * - `goal`: a node that passed the goal test (the search returns its path)
  * - `frontier`: on the frontier
  * - `expanded`: taken off the frontier and expanded
- * - `cutoff`: taken off the frontier at the depth limit and not expanded
+ * - `cutoff`: taken off the frontier at the depth limit and not expanded (also
+ *   at the step that cuts it off: it is not being expanded)
  * - `dropped`: generated but not added (repeated state)
  * - `replaced`: removed from the frontier by a cheaper node for the same state
  * - `generated`: none of the above (e.g. a node left over after the search stopped)
@@ -75,7 +76,9 @@ export function frontierOrder(result: SearchResult, step: number): number[] {
 	if (!byStep) frontierCache.set(result, (byStep = new Map()));
 	const hit = byStep.get(step);
 	if (hit) return hit;
-	const ids = [...frontierAfter(result, step)];
+	// A root that passes the goal test when generated is returned, never taken off.
+	const found = s.kind === 'goal' ? s.node : null;
+	const ids = frontierAfter(result, step).filter((id) => id !== found);
 	const nodes = result.nodes;
 	switch (frontierKind(result.strategy)) {
 		case 'fifo':
@@ -146,9 +149,10 @@ export function statusesAt(
 	if (!s) return out;
 	const frontier = new Set(frontierOrder(result, step));
 	const current = currentNode(result, step);
+	const found = s.kind === 'goal' ? s.node : null;
 	for (const n of nodes) {
 		if (n.created > step) continue;
-		out.set(n.id, statusOf(result, n, step, frontier, current));
+		out.set(n.id, n.id === found ? 'goal' : statusOf(result, n, step, frontier, current));
 	}
 	return out;
 }
@@ -164,8 +168,8 @@ function statusOf(
 	if (n.closed !== null && n.closed <= step) {
 		const kind = result.steps[n.closed].kind;
 		if (kind === 'goal') return 'goal';
-		if (n.id === current) return 'current';
-		return kind === 'cutoff' ? 'cutoff' : 'expanded';
+		if (kind === 'cutoff') return 'cutoff';
+		return n.id === current ? 'current' : 'expanded';
 	}
 	if (n.replacedAt !== null && n.replacedAt <= step) return 'replaced';
 	if (n.outcome === 'explored' || n.outcome === 'frontier' || n.outcome === 'on-path')
@@ -184,10 +188,12 @@ export function countStatuses(
 }
 
 /**
- * State-graph highlight for a step of a search on a graph (§5.3): the current
- * state, states on the frontier, states expanded so far (graph search: the
- * explored set), children dropped at this step, and the solution path at the
- * goal step. Keys are the state keys (graph node names for graph problems).
+ * State-graph highlight for a step of a search on a graph (§5.3): the state
+ * being expanded, states on the frontier, states expanded so far (graph
+ * search: the explored set), children dropped at this step, the state cut off
+ * at the depth limit at this step, and the solution path at the goal step
+ * (the goal node is not expanded, so that step has no `current`). Keys are the
+ * state keys (graph node names for graph problems).
  */
 export function graphHighlightAt(
 	result: SearchResult,
@@ -198,9 +204,10 @@ export function graphHighlightAt(
 	explored: string[];
 	path: string[];
 	dropped: string[];
+	cutoff: string[];
 } {
 	const s = result.steps[step];
-	if (!s) return { frontier: [], explored: [], path: [], dropped: [] };
+	if (!s) return { frontier: [], explored: [], path: [], dropped: [], cutoff: [] };
 	const nodes = result.nodes;
 	const cur = currentNode(result, step);
 	const frontier = [...new Set(frontierOrder(result, step).map((id) => nodes[id].key))];
@@ -230,14 +237,14 @@ export function graphHighlightAt(
 			: [];
 	const path =
 		s.kind === 'goal' && s.node !== null ? pathTo(nodes, s.node).map((id) => nodes[id].key) : [];
-	// A node cut off at the depth limit is not expanded: draw its state like the
-	// tree draws the node (dashed, dropped) rather than as being expanded.
-	if (s.kind === 'cutoff' && cur !== null) dropped.push(nodes[cur].key);
 	return {
-		current: cur === null || s.kind === 'cutoff' ? undefined : nodes[cur].key,
+		// Only an expand step has a node being expanded: a cut-off node and the
+		// goal node are taken off the frontier but not expanded.
+		current: cur !== null && s.kind === 'expand' ? nodes[cur].key : undefined,
 		frontier,
 		explored,
 		path,
-		dropped: [...new Set(dropped)]
+		dropped: [...new Set(dropped)],
+		cutoff: s.kind === 'cutoff' && cur !== null ? [nodes[cur].key] : []
 	};
 }

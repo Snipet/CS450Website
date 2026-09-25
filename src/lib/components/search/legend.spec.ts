@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { LEGEND_ORDER, LEGEND_TEXT, graphLegend, treeLegend } from './legend';
+import {
+	GRAPH_STATUS_WORDS,
+	LEGEND_ORDER,
+	LEGEND_TEXT,
+	graphLegend,
+	statusWord,
+	treeLegend
+} from './legend';
 
 describe('legend', () => {
 	it('has a caption for every key', () => {
@@ -10,11 +17,33 @@ describe('legend', () => {
 		expect(graphLegend(undefined)).toEqual([]);
 		expect(
 			graphLegend(
-				{ path: ['A', 'B'], dropped: ['C'], current: 'A', frontier: ['B'], explored: [] },
+				{ path: ['A', 'B'], dropped: ['C'], current: 'A', frontier: ['B', 'D'], explored: [] },
 				{ goals: ['B'], heuristic: true }
 			)
 		).toEqual(['current', 'frontier', 'goal', 'path', 'dropped', 'heuristic']);
 		expect(graphLegend({ explored: ['A'] })).toEqual(['explored']);
+		expect(graphLegend({ cutoff: ['B'], frontier: ['C'] })).toEqual(['frontier', 'cutoff']);
+		// States drawn as the solution path or as being expanded do not show the other colors.
+		expect(
+			graphLegend({ path: ['S', 'A', 'G'], explored: ['S', 'A'], frontier: ['G'], current: 'X' })
+		).toEqual(['current', 'path']);
+		expect(graphLegend({ path: ['S', 'G'], explored: ['S', 'B'], frontier: ['C'] })).toEqual([
+			'frontier',
+			'explored',
+			'path'
+		]);
+		expect(graphLegend({ cutoff: [] })).toEqual([]);
+	});
+
+	it('statusWord uses the default words or the page’s own text', () => {
+		expect(statusWord('dropped')).toBe('not added');
+		expect(statusWord('cutoff')).toBe(GRAPH_STATUS_WORDS.cutoff);
+		expect(statusWord('dropped', {})).toBe('not added');
+		expect(statusWord('dropped', { dropped: 'Overestimates h*' })).toBe('overestimates h*');
+		expect(statusWord('dropped', { dropped: 'h > h*' })).toBe('h > h*');
+		expect(statusWord('current', { current: 'A* picks this' })).toBe('A* picks this');
+		expect(statusWord('frontier', { frontier: '  ' })).toBe('on the frontier');
+		expect(statusWord('goal', { dropped: 'x' })).toBe('goal state');
 	});
 
 	it('treeLegend follows the status counts', () => {
