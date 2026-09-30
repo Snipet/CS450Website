@@ -65,6 +65,7 @@ export type SectionId =
 	| 'graph-text'
 	| 'puzzle'
 	| 'grid'
+	| 'games'
 	| 'citations';
 
 export interface Section {
@@ -165,6 +166,15 @@ export const SECTIONS: readonly Section[] = [
 			{ deck: 'informed', slide: [38, 40] }
 		],
 		tools: ['grid']
+	},
+	{
+		id: 'games',
+		title: 'Games and adversarial search',
+		cites: [
+			{ deck: 'adversarial', slide: [4, 13] },
+			{ deck: 'adversarial', slide: [20, 25] }
+		],
+		tools: ['minimax', 'tic-tac-toe']
 	},
 	{
 		id: 'citations',
@@ -324,7 +334,7 @@ export interface MathPart {
 export function mathParts(text: string): MathPart[] {
 	const out: MathPart[] = [];
 	let last = 0;
-	for (const m of text.matchAll(/\bh(\d|m)(?=\()/g)) {
+	for (const m of text.matchAll(/\b[hfw](\d|m|n)(?=\(|\s|$)/g)) {
 		const at = m.index + 1;
 		if (at > last) out.push({ text: text.slice(last, at) });
 		out.push({ text: m[1], sub: true });
@@ -1137,6 +1147,153 @@ export const GRID_MOVES_8 = gridMoves(true);
 // Citations
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Games and adversarial search
+// ---------------------------------------------------------------------------
+
+/** Terms of the adversarial search lecture. */
+export const GAME_TERMS: readonly Term[] = [
+	{
+		term: 'MAX, MIN',
+		meaning:
+			'The two players. MAX moves first and MIN replies; utilities are written for MAX. In tic-tac-toe, X is MAX and O is MIN.',
+		cite: { deck: 'adversarial', slide: 6 }
+	},
+	{
+		term: 'Zero-sum game',
+		meaning:
+			'Players take turns; every terminal state has a utility for each player, and the utilities of both players add up to a constant.',
+		cite: { deck: 'adversarial', slide: 4 }
+	},
+	{
+		term: 'Strategy (policy)',
+		meaning:
+			'A mapping from each state to the best move in that state; a game has no fixed action sequence because the opponent’s moves are not known.',
+		cite: { deck: 'adversarial', slide: 5 }
+	},
+	{
+		term: 'Ply',
+		meaning: 'One move by one player; the slides’ abstract game tree is a two-ply game.',
+		cite: { deck: 'adversarial', slide: 9 }
+	},
+	{
+		term: 'Minimax value',
+		meaning:
+			'The utility (for MAX) of being in a node’s state, assuming perfect play on both sides.',
+		cite: { deck: 'adversarial', slide: 10 }
+	},
+	{
+		term: 'Minimax strategy',
+		meaning:
+			'Choose the move that gives the best worst-case payoff. It is optimal against an optimal opponent.',
+		cite: { deck: 'adversarial', slide: 10 }
+	},
+	{
+		term: 'α',
+		meaning: 'The best alternative available to the MAX player so far on the path to the node.',
+		cite: { deck: 'adversarial', slide: 21 }
+	},
+	{
+		term: 'β',
+		meaning: 'The best alternative available to the MIN player so far on the path to the node.',
+		cite: { deck: 'adversarial', slide: 21 }
+	},
+	{
+		term: 'Evaluation function',
+		meaning:
+			'An estimate of a state’s value used when search is cut off at a depth limit instead of its minimax value.',
+		cite: { deck: 'adversarial', slide: 24 }
+	},
+	{
+		term: 'Horizon effect',
+		meaning:
+			'A wrong estimate of a state caused by an event just beyond the depth limit, such as a damaging move that can be delayed but not avoided.',
+		cite: { deck: 'adversarial', slide: 25 }
+	},
+	{
+		term: 'Quiescence search',
+		meaning: 'Do not cut off search at unstable positions.',
+		cite: { deck: 'adversarial', slide: 25 }
+	},
+	{
+		term: 'Singular extension',
+		meaning: 'A strong move that is still tried when the normal depth limit is reached.',
+		cite: { deck: 'adversarial', slide: 25 }
+	}
+];
+
+/** Formulas of the adversarial search lecture. */
+export const GAME_FORMULAS: readonly Formula[] = [
+	{
+		name: 'Minimax',
+		formula:
+			'Minimax(node) = Utility(node) if node is terminal; max over actions of Minimax(Succ(node, action)) if player = MAX; min over actions if player = MIN',
+		meaning: 'Values are backed up from the terminal states to the root.',
+		cite: { deck: 'adversarial', slide: 11 }
+	},
+	{
+		name: 'Pruning at MIN',
+		formula: 'return v when v ≤ α; otherwise β = min(β, v)',
+		meaning: 'MAX already has an alternative worth α, so it will never choose this node.',
+		cite: { deck: 'adversarial', slide: 21 }
+	},
+	{
+		name: 'Pruning at MAX',
+		formula: 'return v when v ≥ β; otherwise α = max(α, v)',
+		meaning: 'MIN already has an alternative worth β, so it will never allow this node.',
+		cite: { deck: 'adversarial', slide: 22 }
+	},
+	{
+		name: 'Weighted evaluation',
+		formula: 'Eval(s) = w1 f1(s) + w2 f2(s) + … + wn fn(s)',
+		meaning:
+			'A weighted sum of features; in chess w may be a piece’s material value (pawn 1, knight 3, rook 5, queen 9).',
+		cite: { deck: 'adversarial', slide: 24 }
+	},
+	{
+		name: 'Perfect ordering',
+		formula: 'O(bᵐ) → O(bᵐᐟ²)',
+		meaning:
+			'With the best moves searched first, alpha-beta finds the best move in O(bᵐᐟ²) time instead of O(bᵐ): search depth is effectively doubled.',
+		cite: { deck: 'adversarial', slide: 23 }
+	}
+];
+
+/** The Max-Value function of Alpha-Beta-Search (Games and Adversarial Search, slide 22). */
+export const MAX_VALUE_CODE: readonly { text: string; indent: number }[] = [
+	{ text: 'Function v = Max-Value(node, α, β)', indent: 0 },
+	{ text: 'if Terminal(node) return Utility(node)', indent: 1 },
+	{ text: 'v = −∞', indent: 1 },
+	{ text: 'for each action from node', indent: 1 },
+	{ text: 'v = Max(v, Min-Value(Succ(node, action), α, β))', indent: 2 },
+	{ text: 'if v ≥ β return v', indent: 2 },
+	{ text: 'α = Max(α, v)', indent: 2 },
+	{ text: 'end for', indent: 1 },
+	{ text: 'return v', indent: 1 }
+];
+
+/** The Min-Value function of Alpha-Beta-Search (Games and Adversarial Search, slide 21). */
+export const MIN_VALUE_CODE: readonly { text: string; indent: number }[] = [
+	{ text: 'Function v = Min-Value(node, α, β)', indent: 0 },
+	{ text: 'if Terminal(node) return Utility(node)', indent: 1 },
+	{ text: 'v = +∞', indent: 1 },
+	{ text: 'for each action from node', indent: 1 },
+	{ text: 'v = Min(v, Max-Value(Succ(node, action), α, β))', indent: 2 },
+	{ text: 'if v ≤ α return v', indent: 2 },
+	{ text: 'β = Min(β, v)', indent: 2 },
+	{ text: 'end for', indent: 1 },
+	{ text: 'return v', indent: 1 }
+];
+
+/** Conventions the game tools follow where the slides leave a choice. */
+export const GAME_CONVENTIONS: readonly string[] = [
+	'Children are searched left to right, in the order the tree lists them; in tic-tac-toe, squares are numbered 1–9 row by row from the top left.',
+	'Alpha-beta starts with α = −∞ and β = +∞ and prunes on equality too (v ≤ α at MIN, v ≥ β at MAX), exactly as the slides’ pseudocode does.',
+	'Among moves with the same minimax value, the first one is chosen.',
+	'Tic-tac-toe utilities are for MAX (X): +1 for a win, 0 for a draw, −1 for a loss.',
+	'In games with more than two players, utilities are tuples and each player picks the child that maximizes its own component; ties go to the leftmost child.'
+];
+
 export interface DeckRow {
 	id: DeckId;
 	title: string;
@@ -1163,6 +1320,8 @@ export function allCitations(): Citation[] {
 	for (const c of COMPLEXITIES) out.push(...c.cite);
 	for (const r of STRATEGY_ROWS) if (r.cite) out.push(r.cite);
 	for (const t of TRACE_DEFS) out.push(t.cite);
+	for (const t of GAME_TERMS) out.push(t.cite);
+	for (const f of GAME_FORMULAS) out.push(f.cite);
 	return out;
 }
 
