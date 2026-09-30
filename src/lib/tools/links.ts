@@ -49,6 +49,10 @@ export interface LinkStates {
 	};
 	approaches: { approach?: ApproachId };
 	history: { era?: string | null };
+	/** `tree` uses the game tree text format (formatGameTree). */
+	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' };
+	/** A board as nine characters, row by row: X, O, or . for an empty square. */
+	'tic-tac-toe': { board?: string };
 }
 
 export type LinkSlug = keyof LinkStates;
