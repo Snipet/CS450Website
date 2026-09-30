@@ -6,6 +6,10 @@ import {
 	ASTAR_WRONG_TEXT,
 	COMPLEXITIES,
 	DECK_ROWS,
+	GAME_FORMULAS,
+	GAME_TERMS,
+	MAX_VALUE_CODE,
+	MIN_VALUE_CODE,
 	GRID_EXAMPLE,
 	GRID_HEURISTIC_ROWS,
 	GRID_MOVES_4,
@@ -65,7 +69,8 @@ describe('citations', () => {
 			'agents',
 			'search',
 			'uninformed',
-			'informed'
+			'informed',
+			'adversarial'
 		]);
 		expect(DECK_ROWS[3].example).toBe('Uninformed Search · slide 2');
 	});
@@ -357,5 +362,19 @@ describe('grid', () => {
 		});
 		const manhattan = GRID_HEURISTIC_ROWS.find((r) => r.id === 'manhattan')!;
 		expect([manhattan.admissible4, manhattan.admissible8]).toEqual([true, false]);
+	});
+});
+
+describe('games', () => {
+	it('cites the adversarial search deck and writes the slide pruning tests', () => {
+		expect(GAME_TERMS.every((t) => t.cite.deck === 'adversarial')).toBe(true);
+		expect(GAME_FORMULAS.map((f) => f.name)).toContain('Pruning at MIN');
+		expect(MIN_VALUE_CODE.map((l) => l.text)).toContain('if v ≤ α return v');
+		expect(MAX_VALUE_CODE.map((l) => l.text)).toContain('if v ≥ β return v');
+		expect(
+			mathParts('w1 f1(s) + wn fn(s)')
+				.filter((p) => p.sub)
+				.map((p) => p.text)
+		).toEqual(['1', '1', 'n', 'n']);
 	});
 });

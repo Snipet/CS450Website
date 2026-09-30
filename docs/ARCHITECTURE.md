@@ -45,6 +45,8 @@ src/
       puzzle/                 8-puzzle boards, moves, h1/h2, solvability, scrambles (§4.3)
       grid/                   grid problems, URL encoding, edits, preset layouts (§4.4)
       agents/                 vacuum world, its state space, task environments (§4.5)
+      games/                  game trees and their text format, minimax, alpha-beta, max-n;
+                              tic-tac-toe (§4.6)
     components/
       layout/                 SiteHeader, SiteFooter, ThemeToggle, CourseMap
       ui/                     UI kit (§5.4) plus pure helpers: stepper.svelte.ts, tones.ts,
@@ -52,6 +54,8 @@ src/
       search/                 StateGraph, SearchTree, FrontierView, StatusLegend (§5.3) plus pure
                               helpers: describe.ts, tree-view.ts, tree-layout.ts, tree-scene.ts,
                               graph-scene.ts, geometry.ts, legend.ts
+      games/                  GameTree (§5.5) plus pure helpers: game-tree-scene.ts, summary.ts,
+                              types.ts
     tools/
       types.ts                ToolMeta, Topic
       registry.ts             glob-imports catalog/*.ts: tools, topics, toolBySlug(), toolsForTopic()
@@ -89,6 +93,8 @@ Tool folders (`src/lib/tools/<slug>/`, route `/<slug>`):
 | `heuristics`   | Heuristics                  | `analysis.ts`, `second.ts` (the compared heuristic), `edit.ts`, `presets.ts`, `state.ts`                                                      |
 | `eight-puzzle` | 8-puzzle                    | `solvers.ts`, `solver.worker.ts` + `worker.ts` + `queue.ts` (Web Worker), `describe.ts`, `chart.ts`, `presets.ts`, `reference.ts`, `state.ts` |
 | `grid`         | Path finding on a grid      | `view.ts` (per-step cell states), `describe.ts`, `presets.ts`, `state.ts`                                                                     |
+| `minimax`      | Minimax and alpha-beta      | `view.ts` (per-step tree display), `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`                                     |
+| `tic-tac-toe`  | Tic-tac-toe                 | `players.ts`, `game.ts`, `analysis.ts`, `tree.ts` (game tree below a position), `describe.ts`, `content.ts`, `presets.ts`, `state.ts`         |
 
 A tool owns `src/routes/<slug>/`, `src/lib/tools/catalog/<slug>.ts`, and (if
 needed) `src/lib/tools/<slug>/`. Tools never edit each other's folders.
@@ -306,8 +312,45 @@ and the wall is removed).
 
 Presets cite the deck and slide with `formatCitation({ deck: 'uninformed', slide: 4 })`
 → "Uninformed Search · slide 4" (a range `[6, 8]` → "slides 6–8"). Deck ids:
-`intro`, `agents`, `search`, `uninformed`, `informed` (see `lectures.ts`).
+`intro`, `agents`, `search`, `uninformed`, `informed`, `adversarial` (see
+`lectures.ts`).
 Never name the instructor or university, and never link to the slide files.
+
+### 3.9 Games (Games and Adversarial Search)
+
+- Players are `MAX` and `MIN`; MAX moves first and utilities are written for
+  MAX (slides 4–6). Tic-tac-toe: X is MAX, O is MIN, utilities +1 / 0 / −1.
+- Game trees are drawn as on slides 9–19: MAX nodes as up-pointing triangles,
+  MIN nodes as down-pointing triangles, terminal utilities underneath, action
+  labels `A1, A2, A3 / A11 … A33` on the edges (generated when a tree gives
+  none; `A1.10` style once a node has more than nine children), level labels
+  `MAX`/`MIN` on the left, backed-up values beside the nodes.
+- Alpha-beta follows the slide 21–22 pseudocode exactly: α, β start at −∞,
+  +∞; Min-Value returns when `v ≤ α`, otherwise `β = min(β, v)`; Max-Value
+  returns when `v ≥ β`, otherwise `α = max(α, v)`. A partly searched node
+  shows its bound (`≥3` at MAX, `≤2` at MIN) as on slides 15–18; pruned
+  branches are dashed and crossed.
+- Children are searched left to right; among equal values the first child
+  (leftmost action, lowest square) is chosen. Move ordering options: as
+  given, best first (perfect ordering, slide 23), worst first; tic-tac-toe
+  also offers center, corners, edges.
+- Depth cutoff (slide 24): a node at the cutoff depth takes its evaluation
+  value. Tic-tac-toe's evaluation is `Eval(s) = w1·X2 + w2·X1 + w3·O2 + w4·O1`
+  (lines with two / one X and no O, and the same for O), default weights
+  (3, 1, −3, −1); wins and losses score ±100 so they outrank every
+  evaluation (|Eval| ≤ 80).
+- Games with more than two players (slide 13): utilities are tuples; the
+  player to move cycles through a player order (the slide's tree is 1, 3, 2);
+  each player picks the child maximizing its own component, ties leftmost.
+- Game tree text (`parseGameTree` / `formatGameTree`): nested brackets
+  `[[3 12 8] [2 4 6] [14 5 2]]` left to right, numbers are terminal
+  utilities; optional header `min:` / `max:` (root player) and
+  `order: 1 3 2`; optional labels `name: …` (words or "quoted"); `{v}` before
+  a list is that node's evaluation value; tuples `(1,2,6)` for multi-player
+  utilities and `{1,2,3}` for their evaluations; `#` comments; commas between
+  nodes optional. Depth ≤ 10, at most 2,000 nodes; problems are diagnostics
+  with spans. The printer writes labels only where they differ from the
+  defaults and round-trips exactly.
 
 ## 4. Engine API (src/lib/theory)
 
@@ -650,6 +693,63 @@ function compareProfile(profile, required): { matches; differs; missing };
 // *_CITE constants hold the slide of each part (DIMENSIONS_CITE, PEAS_CITE, SLIDE_17, …)
 ```
 
+### 4.6 Games (`theory/games/`)
+
+```ts
+// tree.ts — game trees (nodes in preorder; players alternate by level)
+type Player = 'max' | 'min'; type Utility = number | readonly number[];
+interface GameNode { /* id, parent, depth, children, action, utility?, evaluation? */ }
+interface GameTree { nodes: GameNode[]; root: Player; order?: number[] /* multi-player */ }
+const MAX_DEPTH = 10, MAX_NODES = 2000;
+function buildGameTree(spec: NodeSpec, options?): GameTree; function nestedTree(value, root?): GameTree;
+function toSpec(tree), defaultActions(tree), isTerminal(tree, id), playerAt(tree, depth);
+function playerOrder(tree), playerAtDepth(order, depth), nodeName(tree, id), subtreeSizes(tree);
+function treeFacts(tree): TreeFacts; function reorderTree(tree, …): GameTree;
+function randomGameTree({ branching, depth, seed, … }): GameTree; // seeded, uniform
+function uniformTreeSize(b, d), maxRandomDepth(b), seededRandom(seed);
+
+// text.ts — the game tree text format (§3.9)
+function parseGameTree(text): { tree: GameTree | null; diagnostics: Diagnostic[] };
+function formatGameTree(tree, options?): string;
+function highlightGameTree(text): HighlightToken[];   // tuple entries colored per player
+function withRootPlayer(text, player), withPlayerOrder(text, order), parsePlayerOrder(text, players);
+function formatUtility(u), formatValue(n), formatTuple(t); const PLAYER_TONES; function playerTone(p);
+
+// minimax.ts — Minimax(node) (slide 11), depth first, left to right
+function minimax(tree, { cutoff? }): MinimaxResult;   // values, best action, steps, stats
+function normalizeCutoff(tree, cutoff), cutoffCheck(tree, cutoff), rankChildren(…);
+
+// alphabeta.ts — Alpha-Beta-Search (slides 21–22)
+type Ordering = 'given' | 'best-first' | 'worst-first';
+function alphaBeta(tree, { cutoff?, ordering? }): AlphaBetaResult;
+// steps: call (node, α, β), leaf, v update, α/β update, prune (children skipped), return;
+// stats: nodes visited, terminal utilities evaluated, subtrees pruned; the tree searched
+function perfectOrderingLeaves(b, d): number;         // b^⌈d/2⌉ + b^⌊d/2⌋ − 1
+function orderedTree(tree, ordering), fnName(fn) /* 'Max-Value' | 'Min-Value' */, listNames(tree, ids);
+
+// maxn.ts — multi-player back-up (slide 13)
+function maxN(tree, { order, cutoff? }): MaxNResult; function checkOrder(tree, order);
+
+// tictactoe.ts — boards: nine characters X / O / . row by row; X is MAX and moves first
+const EMPTY_BOARD, LINES, SQUARE_NAMES; function toMove(board), winner(board), isTerminal(board);
+function utility(board) /* +1 | 0 | −1 */, legalMoves(board), result(board, square);
+function parseBoard(text), readBoardText(text), boardDiagnostics(board), formatBoard(board);
+function playMoves(board, squares), moveBetween(before, after), moveText(squares), parseMoveText(text);
+
+// tictactoe-search.ts — minimax, alpha-beta, depth-limited search with Eval
+const FEATURES, DEFAULT_WEIGHTS = [3, 1, −3, −1], WIN_SCORE = 100, CENTER_CORNERS_EDGES;
+type MoveOrdering = 'squares' | 'center' | 'best';
+function features(board), evaluate(board, weights?): number;
+function minimax(board, { depth?, weights? }): GameSearch; function minimaxValue(board, options?);
+function alphaBeta(board, { ordering?, depth?, weights? }): GameSearch; // per-move values and bounds
+function gameTree(board?): TreeCounts;                // 549,946 nodes, 255,168 games from the empty board
+function reachableBoards(board?), reachablePositions(board?); // 5,478 positions
+```
+
+`games/index.ts` exports the tree, text, minimax, alpha-beta, and max-n
+modules; import the tic-tac-toe modules by file (their `minimax` and
+`alphaBeta` take boards, not trees).
+
 ## 5. UI contracts
 
 ### 5.1 Tool pages
@@ -724,6 +824,8 @@ interface LinkStates {
 	};
 	approaches: { approach?: ApproachId };
 	history: { era?: string | null };
+	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' }; // tree: game tree text
+	'tic-tac-toe': { board?: string }; // nine characters X / O / . row by row
 }
 ```
 
@@ -810,6 +912,19 @@ citations), `CitationTag`, `CopyLinkButton`, `ToolPage`, `Disclosure`
 `heuristic`, `muted`, `accent`, or a number for the categorical palette
 `--tok-0…5`. `index.ts` exports the components, the stepper, the tone
 helpers and the shared types (`Preset`, `Tone`, `HighlightToken`, `Size`).
+
+### 5.5 Game trees (`$lib/components/games/`)
+
+- `GameTree.svelte` draws a `GameTree` per §3.9 from a per-step
+  `display: GameTreeDisplay` — `status` per node, `labels` (value or `≥`/`≤`
+  bound beside each node), `current`, `bounds` (α and β of the call being
+  processed), `emphasis` (an edge just returned from or chosen), `cut`
+  (children whose edges were pruned), and `best` (the root's best child).
+  Other props: `order` (multi-player trees: squares in each player's color and
+  colored tuples), `actions` (edge labels), `ariaLabel`, `maxHeight`,
+  `legend`. Zoom and fit; level labels stay visible while the tree scrolls.
+- `game-tree-scene.ts` (layout), `summary.ts` (legend and text summary), and
+  `types.ts` are pure and tested.
 
 ## 6. Quality bar
 

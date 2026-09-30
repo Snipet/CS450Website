@@ -44,6 +44,12 @@ export const topics: { id: Topic; title: string; blurb: string; chapter?: string
 		chapter: 'Sections 3.5–3.6'
 	},
 	{
+		id: 'games',
+		title: 'Games and adversarial search',
+		blurb: 'Game trees, minimax, and alpha-beta pruning',
+		chapter: 'Chapter 5'
+	},
+	{
 		id: 'csp',
 		title: 'Constraint satisfaction',
 		blurb: 'Variables, domains, and constraints'
@@ -52,11 +58,6 @@ export const topics: { id: Topic; title: string; blurb: string; chapter?: string
 		id: 'planning',
 		title: 'Classical planning',
 		blurb: 'Actions with preconditions and effects'
-	},
-	{
-		id: 'games',
-		title: 'Adversarial search',
-		blurb: 'Minimax search and games'
 	},
 	{
 		id: 'bayes',

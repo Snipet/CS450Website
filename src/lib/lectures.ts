@@ -3,7 +3,7 @@
  * slide number, e.g. "Uninformed Search · slide 4". Add a deck here when a
  * new lecture is posted; ids are short topic slugs, listed in lecture order.
  */
-export type DeckId = 'intro' | 'agents' | 'search' | 'uninformed' | 'informed';
+export type DeckId = 'intro' | 'agents' | 'search' | 'uninformed' | 'informed' | 'adversarial';
 
 export interface Deck {
 	id: DeckId;
@@ -51,11 +51,25 @@ export const decks: Record<DeckId, Deck> = {
 		topic: 'Heuristics, greedy best-first search, and A*',
 		chapter: 'Sections 3.5–3.6',
 		slides: 44
+	},
+	adversarial: {
+		id: 'adversarial',
+		title: 'Games and Adversarial Search',
+		topic: 'Game trees, minimax, alpha-beta pruning, and evaluation functions',
+		chapter: 'Chapter 5',
+		slides: 28
 	}
 };
 
 /** Decks in lecture order. */
-export const deckOrder: DeckId[] = ['intro', 'agents', 'search', 'uninformed', 'informed'];
+export const deckOrder: DeckId[] = [
+	'intro',
+	'agents',
+	'search',
+	'uninformed',
+	'informed',
+	'adversarial'
+];
 
 export interface Citation {
 	deck: DeckId;

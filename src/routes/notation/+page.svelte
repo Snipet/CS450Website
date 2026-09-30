@@ -60,6 +60,11 @@
 		GRID_EXAMPLE,
 		GRID_HEURISTIC_ROWS,
 		HEURISTIC_PROPERTIES,
+		GAME_TERMS,
+		GAME_FORMULAS,
+		GAME_CONVENTIONS,
+		MAX_VALUE_CODE,
+		MIN_VALUE_CODE,
 		PROBLEMS,
 		PUZZLE_VALUES,
 		REPEATED_STATE_RULES,
@@ -1297,6 +1302,100 @@
 			</section>
 
 			<!-- ================================================================ -->
+			<section aria-labelledby="games">
+				{@render sectionHead('games')}
+				<p>
+					Game trees alternate levels of <span class="f">MAX</span> and <span class="f">MIN</span>
+					nodes. Terminal utilities are written for MAX, and each node's minimax value is backed up from
+					its children.
+				</p>
+				<figure class="game-glyphs">
+					<svg viewBox="0 0 560 120" role="img" aria-labelledby="game-glyphs-cap">
+						<g class="gg">
+							<polygon class="gg-node" points="40,22 58,52 22,52" />
+							<text class="gg-label" x="40" y="80">MAX</text>
+							<polygon class="gg-node" points="130,52 148,22 112,22" />
+							<text class="gg-label" x="130" y="80">MIN</text>
+							<polygon class="gg-leaf" points="220,34 232,54 208,54" />
+							<text class="gg-value" x="220" y="74">12</text>
+							<text class="gg-label" x="220" y="98">terminal</text>
+							<polygon class="gg-node" points="318,22 336,52 300,52" />
+							<text class="gg-bound" x="318" y="14">≥3</text>
+							<polygon class="gg-node" points="398,52 416,22 380,22" />
+							<text class="gg-bound" x="398" y="70">≤2</text>
+							<text class="gg-label" x="358" y="98">bounds during alpha-beta</text>
+							<line class="gg-pruned" x1="470" y1="24" x2="500" y2="60" />
+							<line class="gg-pruned" x1="530" y1="24" x2="500" y2="60" />
+							<text class="gg-label" x="500" y="98">pruned</text>
+						</g>
+					</svg>
+					<figcaption id="game-glyphs-cap">
+						MAX nodes point up, MIN nodes point down, and terminal states carry their utility.
+						Alpha-beta shows a partly searched node's bound (≥ at MAX, ≤ at MIN) and draws pruned
+						branches dashed.
+						<CitationTag cite={{ deck: 'adversarial', slide: [15, 19] }} />
+					</figcaption>
+				</figure>
+
+				<div class="table-wrap">
+					<table class="ref stack terms">
+						<thead>
+							<tr
+								><th scope="col">Term</th><th scope="col">Meaning</th><th scope="col">Slide</th></tr
+							>
+						</thead>
+						<tbody>
+							{#each GAME_TERMS as t (t.term)}
+								<tr><td>{t.term}</td><td>{t.meaning}</td><td><CitationTag cite={t.cite} /></td></tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+
+				<div class="table-wrap">
+					<table class="ref stack props">
+						<thead>
+							<tr>
+								<th scope="col">Rule</th>
+								<th scope="col">Written</th>
+								<th scope="col">Meaning</th>
+								<th scope="col">Slide</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each GAME_FORMULAS as p (p.name)}
+								<tr>
+									<td>{p.name}</td>
+									<td class="f">{@render math(p.formula)}</td>
+									<td>{p.meaning}</td>
+									<td><CitationTag cite={p.cite} /></td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+
+				<div class="code-pair">
+					{#each [{ code: MAX_VALUE_CODE, slide: 22 }, { code: MIN_VALUE_CODE, slide: 21 }] as fn (fn.slide)}
+						<figure>
+							<pre class="algo-code">{#each fn.code as line, i (i)}<span
+										class="line"
+										style="padding-left: {line.indent * 1.5}em">{line.text}</span
+									>{/each}</pre>
+							<figcaption>
+								Alpha-Beta-Search <CitationTag cite={{ deck: 'adversarial', slide: fn.slide }} />
+							</figcaption>
+						</figure>
+					{/each}
+				</div>
+
+				<h3>Conventions beyond the slides</h3>
+				<ul class="conventions">
+					{#each GAME_CONVENTIONS as c, i (i)}<li>{c}</li>{/each}
+				</ul>
+			</section>
+
+			<!-- ================================================================ -->
 			<section aria-labelledby="citations">
 				{@render sectionHead('citations')}
 				<p>
@@ -1354,6 +1453,77 @@
 		color: var(--text-2);
 		font-size: var(--text-lg);
 		line-height: 1.55;
+	}
+
+	/* ---------- games ---------- */
+	.game-glyphs {
+		margin: var(--space-4) 0;
+	}
+	.game-glyphs svg {
+		display: block;
+		width: 100%;
+		max-width: 560px;
+		height: auto;
+	}
+	.gg-node,
+	.gg-leaf {
+		fill: var(--surface-3);
+		stroke: var(--node-stroke);
+		stroke-width: 1.5;
+		stroke-linejoin: round;
+	}
+	.gg-leaf {
+		fill: var(--surface-2);
+	}
+	.gg-label,
+	.gg-value,
+	.gg-bound {
+		fill: var(--text-2);
+		font-family: var(--font-sans);
+		font-size: 13px;
+		text-anchor: middle;
+	}
+	.gg-value {
+		fill: var(--text);
+		font-weight: 600;
+	}
+	.gg-bound {
+		fill: var(--active);
+		font-weight: 600;
+	}
+	.gg-pruned {
+		stroke: var(--dead);
+		stroke-width: 1.5;
+		stroke-dasharray: 4 3;
+	}
+	.game-glyphs figcaption {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		margin-top: var(--space-2);
+		color: var(--text-3);
+		font-size: var(--text-sm);
+	}
+	.algo-code {
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--surface-2);
+		font-size: var(--text-sm);
+		line-height: 1.7;
+		white-space: pre-wrap;
+	}
+	.conventions {
+		margin: 0;
+		padding-left: 1.2em;
+		color: var(--text-2);
+	}
+	.conventions li + li {
+		margin-top: var(--space-1);
 	}
 
 	/* ---------- layout and table of contents ---------- */
