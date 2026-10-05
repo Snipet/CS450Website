@@ -5,7 +5,7 @@ export const site = {
 	name: 'CMSC450 AI Tools',
 	shortName: 'CMSC450',
 	description:
-		'Interactive tools for CMSC450 (artificial intelligence): rational agents, task environments, search problems, uninformed and informed search, and adversarial search in games.'
+		'Interactive tools for CMSC450 (artificial intelligence): rational agents, task environments, search problems, uninformed and informed search, adversarial search in games, and a Lisp evaluator.'
 } as const;
 
 export interface NavLink {

@@ -3,11 +3,16 @@ import { decks, type Citation } from '$lib/lectures';
 import { parseGraphText } from '$lib/theory/graphs';
 import { decodeGrid } from '$lib/theory/grid';
 import { parseGameTree } from '$lib/theory/games';
+import { evaluate } from '$lib/theory/lisp';
+import { EXERCISES } from '$lib/tools/lisp/exercises';
 import {
 	ALGORITHMS,
 	ENVIRONMENT_TYPES,
 	GLOSSARY,
 	ITEM_ORDER,
+	LISP_FORMS,
+	LISP_PATTERNS,
+	LISP_TRACE,
 	POINT_GROUPS,
 	PROS_CONS,
 	SHEET,
@@ -82,6 +87,11 @@ describe('SHEET', () => {
 				}
 				if (ex.slug === 'grid') expect(decodeGrid(ex.state.grid), ex.label).not.toBeNull();
 				if (ex.slug === 'eight-puzzle') expect(ex.state.start).toMatch(/^[0-8]{9}$/);
+				if (ex.slug === 'lisp' && ex.state.exercise)
+					expect(
+						EXERCISES.map((e) => e.id),
+						ex.label
+					).toContain(ex.state.exercise);
 			}
 		}
 	});
@@ -98,5 +108,26 @@ describe('SHEET', () => {
 	it('never names a person behind the course', () => {
 		const text = JSON.stringify({ SHEET, GLOSSARY, ENVIRONMENT_TYPES, ALGORITHMS, PROS_CONS });
 		expect(text).not.toMatch(/Schwartz|Dr\.|Professor|university/i);
+	});
+
+	it('gives Lisp values the evaluator agrees with', () => {
+		for (const f of LISP_FORMS) {
+			const run = evaluate(f.form);
+			expect(
+				run.forms.map((x) => x.printed),
+				f.form
+			).toEqual([f.value]);
+		}
+		for (const p of LISP_PATTERNS) {
+			const run = evaluate(`${p.code}\n${p.call}`);
+			expect(run.forms.at(-1)?.printed, p.title).toBe(p.value);
+		}
+		const run = evaluate(`${LISP_TRACE.code}\n${LISP_TRACE.call}`);
+		expect(run.forms.at(-1)?.printed).toBe(LISP_TRACE.steps.at(-1));
+		for (const step of LISP_TRACE.steps.slice(0, -1)) {
+			// Each line of the trace is an expression with the same value.
+			const again = evaluate(`${LISP_TRACE.code}\n${step}`);
+			expect(again.forms.at(-1)?.printed, step).toBe('3');
+		}
 	});
 });

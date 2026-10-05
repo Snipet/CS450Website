@@ -318,7 +318,43 @@ export const SHEET: readonly SheetSection[] = [
 					}
 				],
 				extra: 'lisp-basics',
-				examples: []
+				examples: [
+					{
+						slug: 'lisp',
+						state: {},
+						label: 'Lisp evaluator',
+						note: 'run any expression; calls are traced the way TRACE prints them'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'read-car-cdr' },
+						label: 'CAR and CDR chains',
+						note: 'what each expression returns'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'read-cond' },
+						label: 'COND',
+						note: 'which clause is taken'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'read-count-items' },
+						label: 'Recursion: counting elements',
+						note: 'predict a recursive function’s result'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'read-nested-lists' },
+						label: 'Recursion on nested lists'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'read-errors' },
+						label: 'Value or error?',
+						note: 'expressions that signal errors'
+					}
+				]
 			},
 			{
 				id: 'lisp-write',
@@ -337,7 +373,27 @@ export const SHEET: readonly SheetSection[] = [
 					}
 				],
 				extra: 'lisp-patterns',
-				examples: []
+				examples: [
+					{
+						slug: 'lisp',
+						state: { exercise: 'write-my-length' },
+						label: 'Length of a list',
+						note: 'write it, then run the test calls'
+					},
+					{ slug: 'lisp', state: { exercise: 'write-factorial' }, label: 'Factorial' },
+					{ slug: 'lisp', state: { exercise: 'write-my-reverse' }, label: 'Reverse a list' },
+					{
+						slug: 'lisp',
+						state: { exercise: 'write-remove-all' },
+						label: 'Remove every occurrence'
+					},
+					{
+						slug: 'lisp',
+						state: { exercise: 'write-count-atoms' },
+						label: 'Count atoms in a nested list'
+					},
+					{ slug: 'lisp', state: { exercise: 'write-flatten' }, label: 'Flatten a nested list' }
+				]
 			}
 		]
 	},

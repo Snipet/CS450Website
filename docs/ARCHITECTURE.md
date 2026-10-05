@@ -47,6 +47,7 @@ src/
       agents/                 vacuum world, its state space, task environments (§4.5)
       games/                  game trees and their text format, minimax, alpha-beta, max-n;
                               tic-tac-toe (§4.6)
+      lisp/                   a Common Lisp subset: reader, printer, evaluator, TRACE output (§4.7)
     components/
       layout/                 SiteHeader, SiteFooter, ThemeToggle, CourseMap
       ui/                     UI kit (§5.4) plus pure helpers: stepper.svelte.ts, tones.ts,
@@ -100,6 +101,7 @@ Tool folders (`src/lib/tools/<slug>/`, route `/<slug>`):
 | `minimax`      | Minimax and alpha-beta      | `view.ts` (per-step tree display), `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`                                     |
 | `tic-tac-toe`  | Tic-tac-toe                 | `players.ts`, `game.ts`, `analysis.ts`, `tree.ts` (game tree below a position), `describe.ts`, `content.ts`, `presets.ts`, `state.ts`         |
 | `rbfs`         | Recursive best-first search | `view.ts` (open calls and stored f per step), `tree-scene.ts`, `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`         |
+| `lisp`         | Lisp evaluator              | `exercises.ts` (interpret and write exercises), `check.ts`, `reference.ts`, `view.ts`, `presets.ts`, `state.ts`                               |
 
 A tool owns `src/routes/<slug>/`, `src/lib/tools/catalog/<slug>.ts`, and (if
 needed) `src/lib/tools/<slug>/`. Tools never edit each other's folders.
@@ -769,6 +771,46 @@ function reachableBoards(board?), reachablePositions(board?); // 5,478 positions
 modules; import the tic-tac-toe modules by file (their `minimax` and
 `alphaBeta` take boards, not trees).
 
+### 4.7 Lisp (`theory/lisp/`)
+
+A subset of Common Lisp for the Lisp topic (no lecture deck; behavior and
+error messages follow SBCL). Data (`types.ts`): interned upper-case symbols,
+integers of any size (`bigint`), ratios, single floats, strings, conses, and
+functions; NIL is the empty list and false.
+
+```ts
+function readAll(text: string, options?: ReadOptions): ReadResult; // forms with spans, diagnostics
+function readOne(text: string, options?: ReadOptions): { datum: LispValue | null; diagnostics }; // one datum (exercise answers)
+function printValue(value: LispValue, options?: PrintOptions): string; // PRIN1, SBCL style
+function eq(a, b): boolean;
+function eql(a, b): boolean;
+function equal(a, b): boolean;
+class Interpreter {
+	constructor(options?: InterpreterOptions); // maxSteps 200 000 per form, maxDepth 1 000,
+	//                                            maxTraceLines 5 000, maxOutput 100 000
+	run(text: string, options?: RunOptions): RunResult; // options: source?, trace? (all user functions)
+}
+function evaluate(text, options?): RunResult; // a fresh Interpreter's run
+// RunResult: { diagnostics, read, forms: FormResult[], trace: TraceEntry[], traceTruncated,
+//   output, outputTruncated }
+// FormResult: { index, span, text, value, printed, error: { kind, message, span? } | null, output }
+// TraceEntry: { kind: 'call' | 'return', depth, name, text, form }
+function traceText(entry): string; // "0: (FACT 3)", "0: FACT returned 6"
+function formatTrace(entries): string; // indented as TRACE prints it
+function tracePartners(entries): number[]; // matching call/return per line
+function callStackAt(entries, index): number[]; // calls in progress at a line
+function highlightLisp(text: string): HighlightToken[];
+```
+
+Each top-level form is evaluated in order; an error stops that form only and
+becomes a `Diagnostic` located at the innermost form that signalled it, with
+Common Lisp's wording ("The value A is not of type LIST."). The evaluator runs
+on an explicit stack, so recursion depth is limited by `maxDepth`, not the
+JavaScript stack. Special forms, the ~100 built-ins, and the forms reported as
+not supported (LOOP, DO, FLET/LABELS, macros, characters, &KEY) are listed in
+`SPECIAL_FORMS`, `BUILTIN_NAMES`, and `UNSUPPORTED_FORMS`. Golden tests pin a
+results table of about 290 expressions, the error messages, and TRACE output.
+
 ## 5. UI contracts
 
 ### 5.1 Tool pages
@@ -846,6 +888,7 @@ interface LinkStates {
 	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' }; // tree: game tree text
 	'tic-tac-toe': { board?: string }; // nine characters X / O / . row by row
 	rbfs: { graph?: string }; // graph text with h values
+	lisp: { code?: string; exercise?: string }; // editor code, or an exercise id to open
 }
 ```
 

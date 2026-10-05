@@ -2,7 +2,8 @@
 
 Interactive, browser-only tools for CMSC450 (artificial intelligence): definitions and history
 of AI, rational agents and task environments, search problems, uninformed and informed search,
-and adversarial search in games. Later topics are added as the course goes on.
+adversarial search in games, and a Lisp evaluator. Later topics are added as the course goes
+on.
 
 The site is a fully static [SvelteKit](https://svelte.dev/docs/kit) (Svelte 5) app, prerendered
 with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its GitHub integration.
@@ -24,6 +25,7 @@ with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its Git
 | Informed search               | Recursive best-first search (`/rbfs`)       | RBFS step by step on a graph: the recursion with each call's f_limit and backed-up f values, the pseudocode line, and counts next to A\*.                     |
 | Games                         | Minimax and alpha-beta pruning (`/minimax`) | Minimax values on a game tree, alpha-beta search step by step with α, β, and pruning, move ordering, depth cutoffs, and multi-player back-up.                 |
 | Games                         | Tic-tac-toe (`/tic-tac-toe`)                | Plays against minimax, alpha-beta, or depth-limited search; shows every move's minimax value, the game tree, node counts, and a weighted evaluation function. |
+| Lisp                          | Lisp evaluator (`/lisp`)                    | Evaluates a Common Lisp subset with TRACE-style call traces and checks exercises: predicting what expressions return and writing basic functions.             |
 
 Reference pages: notation and conventions (`/notation`); lectures (`/lectures`), which lists
 each deck with the tools that cite it and the slides they cite; and the midterm review
@@ -69,7 +71,7 @@ src/
     site.ts               site metadata and navigation
     lectures.ts           lecture decks and citations
     url-state.ts          share-link state in the URL hash
-    theory/               engine: search, graphs, 8-puzzle, grids, agents (pure TS + tests)
+    theory/               engine: search, graphs, 8-puzzle, grids, agents, games, Lisp (pure TS + tests)
     components/           layout, UI kit, search visualizations
     tools/                tool registry, catalog, cross-tool links, tool-specific code
   routes/                 home, notation, lectures, midterm review, one page per tool (all prerendered)
