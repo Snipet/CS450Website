@@ -40,13 +40,14 @@ src/
     assets/                   favicon.svg
     theory/                   pure TS engine (no Svelte, no DOM); *.spec.ts next to each module
       diagnostics.ts          Diagnostic, Span, hasErrors()
-      search/                 SearchProblem, search(), frontiers, strategy properties (§4.1)
+      search/                 SearchProblem, search(), frontiers, strategy properties, RBFS (§4.1)
       graphs/                 weighted graphs, lecture graphs, text format, heuristic analysis, layout (§4.2)
       puzzle/                 8-puzzle boards, moves, h1/h2, solvability, scrambles (§4.3)
       grid/                   grid problems, URL encoding, edits, preset layouts (§4.4)
       agents/                 vacuum world, its state space, task environments (§4.5)
       games/                  game trees and their text format, minimax, alpha-beta, max-n;
                               tic-tac-toe (§4.6)
+      lisp/                   a Common Lisp subset: reader, printer, evaluator, TRACE output (§4.7)
     components/
       layout/                 SiteHeader, SiteFooter, ThemeToggle, CourseMap
       ui/                     UI kit (§5.4) plus pure helpers: stepper.svelte.ts, tones.ts,
@@ -71,6 +72,10 @@ src/
     notation/                 notation reference: +page.svelte, notation.ts (page data computed
                               with the engine and describe.ts, tested) and glyph components
     lectures/+page.svelte     lecture decks with the tools that cite them
+    midterm/                  midterm review: +page.svelte, sheet.ts (the review sheet's sections and
+                              items: facts with citations, tool links, slide questions), checklist.ts
+                              + checklist.svelte.ts (check-offs in localStorage), practice/ (drill
+                              generators and graders on the engines), and the drill components
     <slug>/+page.svelte       one route per tool
 static/                       _headers (Cloudflare Pages response headers), robots.txt
 docs/                         ARCHITECTURE.md (this file), DEPLOYMENT.md
@@ -95,6 +100,8 @@ Tool folders (`src/lib/tools/<slug>/`, route `/<slug>`):
 | `grid`         | Path finding on a grid      | `view.ts` (per-step cell states), `describe.ts`, `presets.ts`, `state.ts`                                                                     |
 | `minimax`      | Minimax and alpha-beta      | `view.ts` (per-step tree display), `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`                                     |
 | `tic-tac-toe`  | Tic-tac-toe                 | `players.ts`, `game.ts`, `analysis.ts`, `tree.ts` (game tree below a position), `describe.ts`, `content.ts`, `presets.ts`, `state.ts`         |
+| `rbfs`         | Recursive best-first search | `view.ts` (open calls and stored f per step), `tree-scene.ts`, `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`         |
+| `lisp`         | Lisp evaluator              | `exercises.ts` (interpret and write exercises), `check.ts`, `reference.ts`, `view.ts`, `presets.ts`, `state.ts`                               |
 
 A tool owns `src/routes/<slug>/`, `src/lib/tools/catalog/<slug>.ts`, and (if
 needed) `src/lib/tools/<slug>/`. Tools never edit each other's folders.
@@ -444,6 +451,20 @@ rebuilds the pop order). `'summary'` keeps no steps and only nodes that
 entered the frontier (8-puzzle solvers, `optimalCost`,
 `optimalSolutionLength`).
 
+Recursive best-first search lives in `rbfs.ts` and is imported by file
+(`$lib/theory/search/rbfs`), not through `index.ts`. The slides only name it
+(Informed Search slide 4); it follows the textbook's Figure 3.26 as tree
+search: `rbfs(problem, { maxExpansions?, record? })` returns the nodes (a
+regenerated node is a new node at the same tree position), steps (`expand`,
+`dead-end`, `call`, `return`, `goal`, `fail`) with each call's f_limit, best
+and alternative and the backed-up f, the solution, and counts (expanded,
+repeated expansions, generated, regenerated, most nodes stored, deepest call).
+`stackAt(result, step)` replays the open calls and `storedF` their successors'
+f values. Ties go to the first successor in successor order; a call whose best
+successor has f = ∞ returns failure, ∞ even when f_limit = ∞ (the printed loop
+would not end). Its golden test reproduces the three stages of the Romania
+example (Figure 3.27).
+
 Golden tests (search.spec.ts) reproduce the slide traces listed in §3.4, the
 greedy and A\* Romania trees (Informed Search slides 8–11, 17–22, including
 every `f=g+h` label), the IDS binary tree (Uninformed Search slides 34–37:
@@ -750,6 +771,46 @@ function reachableBoards(board?), reachablePositions(board?); // 5,478 positions
 modules; import the tic-tac-toe modules by file (their `minimax` and
 `alphaBeta` take boards, not trees).
 
+### 4.7 Lisp (`theory/lisp/`)
+
+A subset of Common Lisp for the Lisp topic (no lecture deck; behavior and
+error messages follow SBCL). Data (`types.ts`): interned upper-case symbols,
+integers of any size (`bigint`), ratios, single floats, strings, conses, and
+functions; NIL is the empty list and false.
+
+```ts
+function readAll(text: string, options?: ReadOptions): ReadResult; // forms with spans, diagnostics
+function readOne(text: string, options?: ReadOptions): { datum: LispValue | null; diagnostics }; // one datum (exercise answers)
+function printValue(value: LispValue, options?: PrintOptions): string; // PRIN1, SBCL style
+function eq(a, b): boolean;
+function eql(a, b): boolean;
+function equal(a, b): boolean;
+class Interpreter {
+	constructor(options?: InterpreterOptions); // maxSteps 200 000 per form, maxDepth 1 000,
+	//                                            maxTraceLines 5 000, maxOutput 100 000
+	run(text: string, options?: RunOptions): RunResult; // options: source?, trace? (all user functions)
+}
+function evaluate(text, options?): RunResult; // a fresh Interpreter's run
+// RunResult: { diagnostics, read, forms: FormResult[], trace: TraceEntry[], traceTruncated,
+//   output, outputTruncated }
+// FormResult: { index, span, text, value, printed, error: { kind, message, span? } | null, output }
+// TraceEntry: { kind: 'call' | 'return', depth, name, text, form }
+function traceText(entry): string; // "0: (FACT 3)", "0: FACT returned 6"
+function formatTrace(entries): string; // indented as TRACE prints it
+function tracePartners(entries): number[]; // matching call/return per line
+function callStackAt(entries, index): number[]; // calls in progress at a line
+function highlightLisp(text: string): HighlightToken[];
+```
+
+Each top-level form is evaluated in order; an error stops that form only and
+becomes a `Diagnostic` located at the innermost form that signalled it, with
+Common Lisp's wording ("The value A is not of type LIST."). The evaluator runs
+on an explicit stack, so recursion depth is limited by `maxDepth`, not the
+JavaScript stack. Special forms, the ~100 built-ins, and the forms reported as
+not supported (LOOP, DO, FLET/LABELS, macros, characters, &KEY) are listed in
+`SPECIAL_FORMS`, `BUILTIN_NAMES`, and `UNSUPPORTED_FORMS`. Golden tests pin a
+results table of about 290 expressions, the error messages, and TRACE output.
+
 ## 5. UI contracts
 
 ### 5.1 Tool pages
@@ -826,6 +887,8 @@ interface LinkStates {
 	history: { era?: string | null };
 	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' }; // tree: game tree text
 	'tic-tac-toe': { board?: string }; // nine characters X / O / . row by row
+	rbfs: { graph?: string }; // graph text with h values
+	lisp: { code?: string; exercise?: string }; // editor code, or an exercise id to open
 }
 ```
 
@@ -938,6 +1001,10 @@ helpers and the shared types (`Preset`, `Tone`, `HighlightToken`, `Size`).
 - Prerendering: every route must prerender (no `window`/`document`/
   `localStorage` access at module top level; read the URL hash in
   `onMount`/`$effect`).
+- Browser storage: the only data the site stores is the theme
+  (`cmsc450-theme`) and the midterm checklist (`cmsc450-midterm-checklist`,
+  `{ v: 1, checked, hideChecked }`). Both are read in `onMount` and wrapped in
+  `try`/`catch`; missing or corrupt data reads as the default.
 - URL state: "Copy link" reproduces the view, reloading restores it, and
   hashes that fail `validate` (garbage, old shapes) are ignored without
   errors.

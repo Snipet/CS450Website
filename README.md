@@ -2,7 +2,8 @@
 
 Interactive, browser-only tools for CMSC450 (artificial intelligence): definitions and history
 of AI, rational agents and task environments, search problems, uninformed and informed search,
-and adversarial search in games. Later topics are added as the course goes on.
+adversarial search in games, and a Lisp evaluator. Later topics are added as the course goes
+on.
 
 The site is a fully static [SvelteKit](https://svelte.dev/docs/kit) (Svelte 5) app, prerendered
 with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its GitHub integration.
@@ -21,12 +22,18 @@ with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its Git
 | Informed search               | Heuristics (`/heuristics`)                  | Checks a heuristic against h\*(n), every edge for consistency, dominance and max, and the paths A\* returns with it.                                          |
 | Informed search               | 8-puzzle (`/eight-puzzle`)                  | Slides tiles, computes h1 and h2, checks solvability, and solves any board with BFS, IDS, greedy, A\*, and weighted A\*.                                      |
 | Informed search               | Path finding on a grid (`/grid`)            | Runs BFS, DFS, UCS, greedy, A\*, and weighted A\* on a grid with drawn walls, one expansion at a time or side by side.                                        |
+| Informed search               | Recursive best-first search (`/rbfs`)       | RBFS step by step on a graph: the recursion with each call's f_limit and backed-up f values, the pseudocode line, and counts next to A\*.                     |
 | Games                         | Minimax and alpha-beta pruning (`/minimax`) | Minimax values on a game tree, alpha-beta search step by step with α, β, and pruning, move ordering, depth cutoffs, and multi-player back-up.                 |
 | Games                         | Tic-tac-toe (`/tic-tac-toe`)                | Plays against minimax, alpha-beta, or depth-limited search; shows every move's minimax value, the game tree, node counts, and a weighted evaluation function. |
+| Lisp                          | Lisp evaluator (`/lisp`)                    | Evaluates a Common Lisp subset with TRACE-style call traces and checks exercises: predicting what expressions return and writing basic functions.             |
 
-Reference pages: notation and conventions (`/notation`), and lectures (`/lectures`), which lists
-each deck with the tools that cite it and the slides they cite. Each tool is registered by a
-file in `src/lib/tools/catalog/`.
+Reference pages: notation and conventions (`/notation`); lectures (`/lectures`), which lists
+each deck with the tools that cite it and the slides they cite; and the midterm review
+(`/midterm`), which goes through the review sheet topic by topic with the facts from the
+slides, links into the tools, practice problems graded by the engines (expansion orders,
+admissibility and consistency, minimax and alpha-beta, the strategy table), and a checklist
+saved in the browser's localStorage. Each tool is registered by a file in
+`src/lib/tools/catalog/`.
 
 ## Development
 
@@ -64,10 +71,10 @@ src/
     site.ts               site metadata and navigation
     lectures.ts           lecture decks and citations
     url-state.ts          share-link state in the URL hash
-    theory/               engine: search, graphs, 8-puzzle, grids, agents (pure TS + tests)
+    theory/               engine: search, graphs, 8-puzzle, grids, agents, games, Lisp (pure TS + tests)
     components/           layout, UI kit, search visualizations
     tools/                tool registry, catalog, cross-tool links, tool-specific code
-  routes/                 home, notation, lectures, one page per tool (all prerendered)
+  routes/                 home, notation, lectures, midterm review, one page per tool (all prerendered)
 static/                   _headers (Cloudflare Pages response headers), robots.txt
 docs/                     architecture and deployment notes
 vite.config.ts            SvelteKit and Vitest configuration

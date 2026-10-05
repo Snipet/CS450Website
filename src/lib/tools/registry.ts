@@ -26,6 +26,11 @@ export const topics: { id: Topic; title: string; blurb: string; chapter?: string
 		chapter: 'Chapter 1'
 	},
 	{
+		id: 'lisp',
+		title: 'Lisp',
+		blurb: 'Reading and writing basic Lisp functions'
+	},
+	{
 		id: 'agents',
 		title: 'Rational agents',
 		blurb: 'Agents, PEAS, and environment types',

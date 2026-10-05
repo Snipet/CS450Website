@@ -53,6 +53,10 @@ export interface LinkStates {
 	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' };
 	/** A board as nine characters, row by row: X, O, or . for an empty square. */
 	'tic-tac-toe': { board?: string };
+	/** `code`: Lisp source for the editor; `exercise`: an exercise id to open. */
+	lisp: { code?: string; exercise?: string };
+	/** `graph` uses the graph text format (formatGraphText); it needs h values. */
+	rbfs: { graph?: string };
 }
 
 export type LinkSlug = keyof LinkStates;
