@@ -40,7 +40,7 @@ src/
     assets/                   favicon.svg
     theory/                   pure TS engine (no Svelte, no DOM); *.spec.ts next to each module
       diagnostics.ts          Diagnostic, Span, hasErrors()
-      search/                 SearchProblem, search(), frontiers, strategy properties (§4.1)
+      search/                 SearchProblem, search(), frontiers, strategy properties, RBFS (§4.1)
       graphs/                 weighted graphs, lecture graphs, text format, heuristic analysis, layout (§4.2)
       puzzle/                 8-puzzle boards, moves, h1/h2, solvability, scrambles (§4.3)
       grid/                   grid problems, URL encoding, edits, preset layouts (§4.4)
@@ -99,6 +99,7 @@ Tool folders (`src/lib/tools/<slug>/`, route `/<slug>`):
 | `grid`         | Path finding on a grid      | `view.ts` (per-step cell states), `describe.ts`, `presets.ts`, `state.ts`                                                                     |
 | `minimax`      | Minimax and alpha-beta      | `view.ts` (per-step tree display), `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`                                     |
 | `tic-tac-toe`  | Tic-tac-toe                 | `players.ts`, `game.ts`, `analysis.ts`, `tree.ts` (game tree below a position), `describe.ts`, `content.ts`, `presets.ts`, `state.ts`         |
+| `rbfs`         | Recursive best-first search | `view.ts` (open calls and stored f per step), `tree-scene.ts`, `describe.ts`, `pseudocode.ts`, `content.ts`, `presets.ts`, `state.ts`         |
 
 A tool owns `src/routes/<slug>/`, `src/lib/tools/catalog/<slug>.ts`, and (if
 needed) `src/lib/tools/<slug>/`. Tools never edit each other's folders.
@@ -447,6 +448,20 @@ few thousand steps. `'nodes'` drops the snapshots (grids; `frontierOrder`
 rebuilds the pop order). `'summary'` keeps no steps and only nodes that
 entered the frontier (8-puzzle solvers, `optimalCost`,
 `optimalSolutionLength`).
+
+Recursive best-first search lives in `rbfs.ts` and is imported by file
+(`$lib/theory/search/rbfs`), not through `index.ts`. The slides only name it
+(Informed Search slide 4); it follows the textbook's Figure 3.26 as tree
+search: `rbfs(problem, { maxExpansions?, record? })` returns the nodes (a
+regenerated node is a new node at the same tree position), steps (`expand`,
+`dead-end`, `call`, `return`, `goal`, `fail`) with each call's f_limit, best
+and alternative and the backed-up f, the solution, and counts (expanded,
+repeated expansions, generated, regenerated, most nodes stored, deepest call).
+`stackAt(result, step)` replays the open calls and `storedF` their successors'
+f values. Ties go to the first successor in successor order; a call whose best
+successor has f = ∞ returns failure, ∞ even when f_limit = ∞ (the printed loop
+would not end). Its golden test reproduces the three stages of the Romania
+example (Figure 3.27).
 
 Golden tests (search.spec.ts) reproduce the slide traces listed in §3.4, the
 greedy and A\* Romania trees (Informed Search slides 8–11, 17–22, including
@@ -830,6 +845,7 @@ interface LinkStates {
 	history: { era?: string | null };
 	minimax: { tree: string; algorithm?: 'minimax' | 'alphabeta' }; // tree: game tree text
 	'tic-tac-toe': { board?: string }; // nine characters X / O / . row by row
+	rbfs: { graph?: string }; // graph text with h values
 }
 ```
 

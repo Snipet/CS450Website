@@ -21,6 +21,7 @@ with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its Git
 | Informed search               | Heuristics (`/heuristics`)                  | Checks a heuristic against h\*(n), every edge for consistency, dominance and max, and the paths A\* returns with it.                                          |
 | Informed search               | 8-puzzle (`/eight-puzzle`)                  | Slides tiles, computes h1 and h2, checks solvability, and solves any board with BFS, IDS, greedy, A\*, and weighted A\*.                                      |
 | Informed search               | Path finding on a grid (`/grid`)            | Runs BFS, DFS, UCS, greedy, A\*, and weighted A\* on a grid with drawn walls, one expansion at a time or side by side.                                        |
+| Informed search               | Recursive best-first search (`/rbfs`)       | RBFS step by step on a graph: the recursion with each call's f_limit and backed-up f values, the pseudocode line, and counts next to A\*.                     |
 | Games                         | Minimax and alpha-beta pruning (`/minimax`) | Minimax values on a game tree, alpha-beta search step by step with α, β, and pruning, move ordering, depth cutoffs, and multi-player back-up.                 |
 | Games                         | Tic-tac-toe (`/tic-tac-toe`)                | Plays against minimax, alpha-beta, or depth-limited search; shows every move's minimax value, the game tree, node counts, and a weighted evaluation function. |
 
