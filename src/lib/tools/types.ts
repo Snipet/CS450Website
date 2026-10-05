@@ -6,6 +6,7 @@ import type { Citation } from '$lib/lectures';
  */
 export type Topic =
 	| 'intro'
+	| 'lisp'
 	| 'agents'
 	| 'search'
 	| 'informed'
