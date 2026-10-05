@@ -140,7 +140,15 @@
 		}
 	}
 	@media (max-width: 340px) {
-		/* Keep the name for screen readers; show only the mark. */
+		.inner {
+			gap: var(--space-1);
+		}
+		nav a {
+			padding: 6px 3px;
+		}
+	}
+	@media (max-width: 420px) {
+		/* Keep the name for screen readers; show only the mark, so every nav link fits. */
 		.name {
 			position: absolute;
 			width: 1px;

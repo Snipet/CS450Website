@@ -71,6 +71,10 @@ src/
     notation/                 notation reference: +page.svelte, notation.ts (page data computed
                               with the engine and describe.ts, tested) and glyph components
     lectures/+page.svelte     lecture decks with the tools that cite them
+    midterm/                  midterm review: +page.svelte, sheet.ts (the review sheet's sections and
+                              items: facts with citations, tool links, slide questions), checklist.ts
+                              + checklist.svelte.ts (check-offs in localStorage), practice/ (drill
+                              generators and graders on the engines), and the drill components
     <slug>/+page.svelte       one route per tool
 static/                       _headers (Cloudflare Pages response headers), robots.txt
 docs/                         ARCHITECTURE.md (this file), DEPLOYMENT.md
@@ -938,6 +942,10 @@ helpers and the shared types (`Preset`, `Tone`, `HighlightToken`, `Size`).
 - Prerendering: every route must prerender (no `window`/`document`/
   `localStorage` access at module top level; read the URL hash in
   `onMount`/`$effect`).
+- Browser storage: the only data the site stores is the theme
+  (`cmsc450-theme`) and the midterm checklist (`cmsc450-midterm-checklist`,
+  `{ v: 1, checked, hideChecked }`). Both are read in `onMount` and wrapped in
+  `try`/`catch`; missing or corrupt data reads as the default.
 - URL state: "Copy link" reproduces the view, reloading restores it, and
   hashes that fail `validate` (garbage, old shapes) are ignored without
   errors.

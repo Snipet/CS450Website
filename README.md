@@ -24,9 +24,13 @@ with `@sveltejs/adapter-static` and deployed to Cloudflare Pages through its Git
 | Games                         | Minimax and alpha-beta pruning (`/minimax`) | Minimax values on a game tree, alpha-beta search step by step with α, β, and pruning, move ordering, depth cutoffs, and multi-player back-up.                 |
 | Games                         | Tic-tac-toe (`/tic-tac-toe`)                | Plays against minimax, alpha-beta, or depth-limited search; shows every move's minimax value, the game tree, node counts, and a weighted evaluation function. |
 
-Reference pages: notation and conventions (`/notation`), and lectures (`/lectures`), which lists
-each deck with the tools that cite it and the slides they cite. Each tool is registered by a
-file in `src/lib/tools/catalog/`.
+Reference pages: notation and conventions (`/notation`); lectures (`/lectures`), which lists
+each deck with the tools that cite it and the slides they cite; and the midterm review
+(`/midterm`), which goes through the review sheet topic by topic with the facts from the
+slides, links into the tools, practice problems graded by the engines (expansion orders,
+admissibility and consistency, minimax and alpha-beta, the strategy table), and a checklist
+saved in the browser's localStorage. Each tool is registered by a file in
+`src/lib/tools/catalog/`.
 
 ## Development
 
@@ -67,7 +71,7 @@ src/
     theory/               engine: search, graphs, 8-puzzle, grids, agents (pure TS + tests)
     components/           layout, UI kit, search visualizations
     tools/                tool registry, catalog, cross-tool links, tool-specific code
-  routes/                 home, notation, lectures, one page per tool (all prerendered)
+  routes/                 home, notation, lectures, midterm review, one page per tool (all prerendered)
 static/                   _headers (Cloudflare Pages response headers), robots.txt
 docs/                     architecture and deployment notes
 vite.config.ts            SvelteKit and Vitest configuration

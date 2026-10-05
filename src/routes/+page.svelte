@@ -57,7 +57,7 @@
 	<section class="section" id="reference" aria-labelledby="reference-title">
 		<header class="section-head">
 			<h2 id="reference-title">Reference</h2>
-			<p>Symbols, conventions, and lecture index</p>
+			<p>Symbols, conventions, midterm review, and lecture index</p>
 		</header>
 		<ul class="cards">
 			<li>
@@ -71,6 +71,18 @@
 						in diagrams, and the conventions the tools follow where the slides leave a choice.</span
 					>
 					<span class="card-sample mono" aria-hidden="true">f(n) = g(n) + h(n)</span>
+				</a>
+			</li>
+			<li>
+				<a class="card" href={resolve('/midterm')}>
+					<span class="card-title">
+						Midterm review
+						<Icon name="arrow-right" size={18} class="card-arrow" />
+					</span>
+					<span class="card-summary"
+						>The midterm review sheet topic by topic: facts from the slides, the tools opened on the
+						slide examples, practice problems, and check-offs saved in this browser.</span
+					>
 				</a>
 			</li>
 			<li>
